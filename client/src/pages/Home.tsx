@@ -29,6 +29,13 @@ FIM SE`,
   vetor[i] <- i * 10
   IMPRIMALN vetor[i]
 FIM PARA`,
+
+  error: `a <- 10
+IMPRIMALN 'Valor de a: '
+IMPRIMA a
+IMPRIMALN 'Valor de b: '
+IMPRIMA b
+c <- x + 5`,
 };
 
 export default function Home() {
@@ -164,6 +171,7 @@ export default function Home() {
                       {key === 'loop' && 'Loop PARA'}
                       {key === 'conditional' && 'Condicional'}
                       {key === 'array' && 'Vetores'}
+                      {key === 'error' && 'Com Erro'}
                     </Button>
                   ))}
                 </div>
