@@ -36,6 +36,27 @@ IMPRIMA a
 IMPRIMALN 'Valor de b: '
 IMPRIMA b
 c <- x + 5`,
+
+  repita: `REPITA 5 VEZES
+  IMPRIMALN 'Descasque uma batata'
+FIM REPITA`,
+
+  enquanto: `i <- 1
+ENQUANTO i <= 5 FAÇA
+  IMPRIMALN i
+  i <- i + 1
+FIM ENQUANTO`,
+
+  operadores: `a <- 10
+b <- 5
+IMPRIMALN 'Soma: '
+IMPRIMA a + b
+IMPRIMALN ''
+IMPRIMALN 'Subtração: '
+IMPRIMA a - b
+IMPRIMALN ''
+IMPRIMALN 'Multiplicação: '
+IMPRIMA a * b`,
 };
 
 export default function Home() {
@@ -171,6 +192,9 @@ export default function Home() {
                       {key === 'loop' && 'Loop PARA'}
                       {key === 'conditional' && 'Condicional'}
                       {key === 'array' && 'Vetores'}
+                      {key === 'repita' && 'Repita'}
+                      {key === 'enquanto' && 'Enquanto'}
+                      {key === 'operadores' && 'Operadores'}
                       {key === 'error' && 'Com Erro'}
                     </Button>
                   ))}
