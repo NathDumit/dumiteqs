@@ -53,7 +53,13 @@ const PeteqsHelper = {
   cleanCode: function (code: string): string[] {
     return code
       .split('\n')
-      .map(line => line.trim())
+      .map(line => {
+        // Converter RETORNA para resultado <-
+        line = line.replace(/^\s*retorna\s+/i, 'resultado <- ');
+        // Converter CHAMAR para chamada direta
+        line = line.replace(/^\s*chamar\s+/i, '');
+        return line.trim();
+      })
       .filter(line => line && !line.startsWith('//'));
   },
 
@@ -96,9 +102,9 @@ const PeteqsHelper = {
     while (i < lines.length) {
       const line = lines[i];
       
-      // Detectar PROCEDIMENTO
-      if (line.match(/^procedimento\s+/i)) {
-        const match = line.match(/^procedimento\s+(\w+)\s*\(\s*([^)]*)\s*\)/i);
+      // Detectar PROCEDIMENTO (ou PROCEDIMENTO)
+      if (line.match(/^(?:procedimento|procedimento)\s+/i)) {
+        const match = line.match(/^(?:procedimento|procedimento)\s+(\w+)\s*\(\s*([^)]*)\s*\)/i);
         if (match) {
           const procName = match[1];
           const params = match[2] ? match[2].split(',').map(p => p.trim()) : [];
@@ -113,9 +119,9 @@ const PeteqsHelper = {
           procedures[procName] = { params, lines: procLines };
         }
       }
-      // Detectar FUNCAO
-      else if (line.match(/^funcao\s+/i)) {
-        const match = line.match(/^funcao\s+(\w+)\s*\(\s*([^)]*)\s*\)/i);
+      // Detectar FUNCAO (ou FUNCAO)
+      else if (line.match(/^(?:funcao|funcao)\s+/i)) {
+        const match = line.match(/^(?:funcao|funcao)\s+(\w+)\s*\(\s*([^)]*)\s*\)/i);
         if (match) {
           const funcName = match[1];
           const params = match[2] ? match[2].split(',').map(p => p.trim()) : [];
@@ -142,7 +148,6 @@ const PeteqsHelper = {
 (function(target) {
   let loopStart = Date.now();
   let pq_resultado = undefined;
-  let resultado = undefined;
   
   function PQ_print(t, ...args) {
     for (let arg of args) {
@@ -174,7 +179,7 @@ const PeteqsHelper = {
     // Gerar código para funções
     for (const [funcName, funcDef] of Object.entries(functions)) {
       jsCode += `  function ${funcName}(${funcDef.params.join(', ')}) {\n`;
-      jsCode += `    let ${funcName}_resultado = undefined;\n`;
+      jsCode += `    let pq_func_resultado = undefined;\n`;
       
       for (let j = 0; j < funcDef.lines.length; j++) {
         const line = funcDef.lines[j];
@@ -184,7 +189,7 @@ const PeteqsHelper = {
         }
       }
       
-      jsCode += `    return ${funcName}_resultado;\n`;
+      jsCode += `    return pq_func_resultado;\n`;
       jsCode += '  }\n\n';
     }
 
@@ -226,6 +231,11 @@ const PeteqsHelper = {
     // IMPRIMALN - imprime com quebra de linha
     if (line.match(/^imprimaln\s+/i)) {
       const expr = line.replace(/^imprimaln\s+/i, '').trim();
+      // Se tiver + para concatenação, tratar como uma única expressão
+      if (expr.includes('+')) {
+        const converted = this.convertExpression(expr);
+        return { code: `PQ_print(target, ${converted}); PQ_print(target, '<br>');`, skipLines: 0 };
+      }
       // Parse os argumentos respeitando strings
       const args = this.parseImprimitArgs(expr);
       const jsArgs = args.map((arg) => this.convertExpression(arg));
@@ -235,6 +245,11 @@ const PeteqsHelper = {
     // IMPRIMA - imprime sem quebra de linha
     if (line.match(/^imprima\s+/i)) {
       const expr = line.replace(/^imprima\s+/i, '').trim();
+      // Se tiver + para concatenação, tratar como uma única expressão
+      if (expr.includes('+')) {
+        const converted = this.convertExpression(expr);
+        return { code: `PQ_print(target, ${converted});`, skipLines: 0 };
+      }
       const args = this.parseImprimitArgs(expr);
       const jsArgs = args.map((arg) => this.convertExpression(arg));
       return { code: `PQ_print(target, ${jsArgs.join(', ')});`, skipLines: 0 };
@@ -481,6 +496,12 @@ for (let pq_repita_i = 0; pq_repita_i < ${times}; pq_repita_i++) {
           }
           return { code: `var ${varPart} = ${funcName}(${args.join(', ')});`, skipLines: 0 };
         }
+      }
+      
+      // Se for atribuição de 'resultado', usar pq_func_resultado em funções
+      if (varPart === 'resultado') {
+        const converted = this.convertExpression(exprPart);
+        return { code: `pq_func_resultado = ${converted};`, skipLines: 0 };
       }
       
       const converted = this.convertExpression(exprPart);
