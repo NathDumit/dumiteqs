@@ -87,28 +87,28 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+    <div className="min-h-screen bg-gradient-to-br from-green-950 via-green-900 to-emerald-950">
       {/* Header */}
-      <header className="border-b border-slate-700 bg-slate-900/50 backdrop-blur-sm sticky top-0 z-50">
+      <header className="border-b border-green-700 bg-green-900/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-purple-500 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold">P</span>
-                </div>
-                Interpretador PETEQS
-              </h1>
-              <p className="text-slate-400 text-sm mt-1">
-                Pseudolinguagem para aprendizado de lógica de programação
-              </p>
+            <h1 className="text-3xl font-bold text-white flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-emerald-500 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold">D</span>
+              </div>
+              DUMITEQS
+            </h1>
+            <p className="text-green-300 text-sm mt-1">
+              Pseudolinguagem para aprendizado de lógica de programação
+            </p>
             </div>
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleReset}
-                className="border-slate-600 hover:bg-slate-700"
+                className="border-green-600 hover:bg-green-700"
               >
                 <RotateCcw className="w-4 h-4 mr-2" />
                 Resetar
@@ -123,29 +123,29 @@ export default function Home() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Editor */}
           <div className="lg:col-span-2 space-y-4">
-            <Card className="bg-slate-800 border-slate-700">
+            <Card className="bg-green-800 border-green-700">
               <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
-                  <BookOpen className="w-5 h-5 text-blue-400" />
+                  <BookOpen className="w-5 h-5 text-green-300" />
                   Editor de Código
                 </CardTitle>
-                <CardDescription className="text-slate-400">
-                  Escreva seu código PETEQS abaixo
+                <CardDescription className="text-green-300">
+                  Escreva seu código DUMITEQS abaixo
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <textarea
                   value={code}
                   onChange={(e) => setCode(e.target.value)}
-                  className="w-full h-64 p-4 bg-slate-900 text-white font-mono text-sm border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                  placeholder="Digite seu código PETEQS aqui..."
+                  className="w-full h-64 p-4 bg-green-950 text-green-100 font-mono text-sm border border-green-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent resize-none"
+                  placeholder="Digite seu código DUMITEQS aqui..."
                   spellCheck="false"
                 />
               </CardContent>
             </Card>
 
             {/* Examples */}
-            <Card className="bg-slate-800 border-slate-700">
+            <Card className="bg-green-800 border-green-700">
               <CardHeader>
                 <CardTitle className="text-white text-sm">Exemplos</CardTitle>
               </CardHeader>
@@ -157,7 +157,7 @@ export default function Home() {
                       variant="outline"
                       size="sm"
                       onClick={() => handleLoadExample(key as keyof typeof EXAMPLES)}
-                      className="border-slate-600 hover:bg-slate-700 text-slate-300 capitalize"
+                      className="border-green-600 hover:bg-green-700 text-green-100 capitalize"
                     >
                       {key === 'hello' && 'Olá Mundo'}
                       {key === 'variables' && 'Variáveis'}
@@ -177,14 +177,14 @@ export default function Home() {
             <Button
               onClick={handleExecute}
               disabled={isRunning}
-              className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold py-6 text-lg"
+              className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold py-6 text-lg"
             >
               <Play className="w-5 h-5 mr-2" />
               {isRunning ? 'Executando...' : 'Executar'}
             </Button>
 
             {/* Output */}
-            <Card className="bg-slate-800 border-slate-700">
+            <Card className="bg-green-800 border-green-700">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-white text-sm">Saída</CardTitle>
@@ -193,7 +193,7 @@ export default function Home() {
                       variant="ghost"
                       size="sm"
                       onClick={handleCopyOutput}
-                      className="text-slate-400 hover:text-white"
+                      className="text-green-300 hover:text-white"
                     >
                       <Copy className="w-4 h-4" />
                     </Button>
@@ -201,7 +201,7 @@ export default function Home() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="bg-slate-900 rounded-lg p-4 min-h-32 max-h-48 overflow-y-auto font-mono text-sm text-slate-300 whitespace-pre-wrap break-words">
+                <div className="bg-green-950 rounded-lg p-4 min-h-32 max-h-48 overflow-y-auto font-mono text-sm text-green-300 whitespace-pre-wrap break-words">
                   {error ? (
                     <div className="text-red-400">{error}</div>
                   ) : output ? (
@@ -215,7 +215,7 @@ export default function Home() {
                       }}
                     />
                   ) : (
-                    <div className="text-slate-500">Nenhuma saída ainda</div>
+                    <div className="text-green-700">Nenhuma saída ainda</div>
                   )}
                 </div>
               </CardContent>
@@ -223,13 +223,13 @@ export default function Home() {
 
             {/* Translated Code Toggle */}
             {translatedCode && (
-              <Card className="bg-slate-800 border-slate-700">
+              <Card className="bg-green-800 border-green-700">
                 <CardHeader>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => setShowTranslated(!showTranslated)}
-                    className="w-full justify-start text-white hover:bg-slate-700"
+                    className="w-full justify-start text-white hover:bg-green-700"
                   >
                     <span className="text-xs">
                       {showTranslated ? '▼' : '▶'} Código JavaScript Traduzido
@@ -238,7 +238,7 @@ export default function Home() {
                 </CardHeader>
                 {showTranslated && (
                   <CardContent>
-                    <div className="bg-slate-900 rounded-lg p-3 max-h-48 overflow-y-auto font-mono text-xs text-slate-400 whitespace-pre-wrap break-words">
+                    <div className="bg-green-950 rounded-lg p-3 max-h-48 overflow-y-auto font-mono text-xs text-green-300 whitespace-pre-wrap break-words">
                       {translatedCode}
                     </div>
                   </CardContent>
@@ -249,43 +249,43 @@ export default function Home() {
         </div>
 
         {/* Documentation */}
-        <Card className="mt-8 bg-slate-800 border-slate-700">
+        <Card className="mt-8 bg-green-800 border-green-700">
           <CardHeader>
             <CardTitle className="text-white">Guia Rápido de Sintaxe</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-slate-300 text-sm">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-green-100 text-sm">
               <div>
                 <h3 className="font-semibold text-white mb-3">Operações Básicas</h3>
                 <ul className="space-y-2 font-mono text-xs">
-                  <li><span className="text-blue-400">a &lt;- 10</span> Atribuição</li>
-                  <li><span className="text-blue-400">a + b, a - b</span> Soma e Subtração</li>
-                  <li><span className="text-blue-400">a * b, a / b</span> Multiplicação e Divisão</li>
-                  <li><span className="text-blue-400">a MOD b</span> Módulo</li>
+                  <li><span className="text-green-300">a &lt;- 10</span> Atribuição</li>
+                  <li><span className="text-green-300">a + b, a - b</span> Soma e Subtração</li>
+                  <li><span className="text-green-300">a * b, a / b</span> Multiplicação e Divisão</li>
+                  <li><span className="text-green-300">a MOD b</span> Módulo</li>
                 </ul>
               </div>
               <div>
                 <h3 className="font-semibold text-white mb-3">Estruturas de Controle</h3>
                 <ul className="space-y-2 font-mono text-xs">
-                  <li><span className="text-blue-400">SE ... ENTÃO ... FIM SE</span> Condicional</li>
-                  <li><span className="text-blue-400">PARA i &lt;- 1 ATÉ 10 FAÇA ... FIM PARA</span> Loop</li>
-                  <li><span className="text-blue-400">ENQUANTO ... FAÇA ... FIM ENQUANTO</span> Loop Condicional</li>
+                  <li><span className="text-green-300">SE ... ENTÃO ... FIM SE</span> Condicional</li>
+                  <li><span className="text-green-300">PARA i &lt;- 1 ATÉ 10 FAÇA ... FIM PARA</span> Loop</li>
+                  <li><span className="text-green-300">ENQUANTO ... FAÇA ... FIM ENQUANTO</span> Loop Condicional</li>
                 </ul>
               </div>
               <div>
                 <h3 className="font-semibold text-white mb-3">Entrada e Saída</h3>
                 <ul className="space-y-2 font-mono text-xs">
-                  <li><span className="text-blue-400">IMPRIMA valor</span> Imprime sem quebra</li>
-                  <li><span className="text-blue-400">IMPRIMALN valor</span> Imprime com quebra</li>
-                  <li><span className="text-blue-400">LEIA variavel</span> Lê entrada</li>
+                  <li><span className="text-green-300">IMPRIMA valor</span> Imprime sem quebra</li>
+                  <li><span className="text-green-300">IMPRIMALN valor</span> Imprime com quebra</li>
+                  <li><span className="text-green-300">LEIA variavel</span> Lê entrada</li>
                 </ul>
               </div>
               <div>
                 <h3 className="font-semibold text-white mb-3">Operadores Lógicos</h3>
                 <ul className="space-y-2 font-mono text-xs">
-                  <li><span className="text-blue-400">=</span> Igual</li>
-                  <li><span className="text-blue-400">&lt;&gt;</span> Diferente</li>
-                  <li><span className="text-blue-400">&lt;, &gt;, &lt;=, &gt;=</span> Comparação</li>
+                  <li><span className="text-green-300">=</span> Igual</li>
+                  <li><span className="text-green-300">&lt;&gt;</span> Diferente</li>
+                  <li><span className="text-green-300">&lt;, &gt;, &lt;=, &gt;=</span> Comparação</li>
                 </ul>
               </div>
             </div>
