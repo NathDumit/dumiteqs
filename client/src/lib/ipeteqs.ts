@@ -8,6 +8,12 @@
 export interface ExecutionResult {
   output: string;
   error?: string;
+  errorDetails?: {
+    message: string;
+    line: number;
+    type: string;
+    code?: string;
+  };
   translatedCode?: string;
 }
 
@@ -287,6 +293,96 @@ const PeteqsCore = {
   },
 };
 
+function parseError(code: string, error: any): {
+  message: string;
+  line: number;
+  type: string;
+  code?: string;
+} {
+  const lines = code.split('\n');
+  const errorMessage = error instanceof Error ? error.message : String(error);
+  
+  let errorType = 'Erro Desconhecido';
+  let lineNumber = 1;
+  let problemCode = '';
+
+  // Detectar tipo de erro
+  if (errorMessage.includes('Unexpected token')) {
+    errorType = 'Erro de Sintaxe';
+  } else if (errorMessage.includes('is not defined')) {
+    errorType = 'Variável não definida';
+    const match = errorMessage.match(/(\w+) is not defined/);
+    if (match) {
+      const varName = match[1];
+      // Encontrar a linha onde a variável é usada
+      for (let i = 0; i < lines.length; i++) {
+        if (lines[i].includes(varName)) {
+          lineNumber = i + 1;
+          problemCode = lines[i].trim();
+          break;
+        }
+      }
+    }
+  } else if (errorMessage.includes('is not a function')) {
+    errorType = 'Função não encontrada';
+    const match = errorMessage.match(/(\w+) is not a function/);
+    if (match) {
+      const funcName = match[1];
+      for (let i = 0; i < lines.length; i++) {
+        if (lines[i].includes(funcName)) {
+          lineNumber = i + 1;
+          problemCode = lines[i].trim();
+          break;
+        }
+      }
+    }
+  } else if (errorMessage.includes('Invalid or unexpected token')) {
+    errorType = 'Token Inválido';
+  } else if (errorMessage.includes('Missing')) {
+    errorType = 'Sintaxe Incompleta';
+  } else if (errorMessage.includes('Tempo máximo')) {
+    errorType = 'Loop Infinito';
+  }
+
+  // Tentar encontrar a linha do erro no stack trace
+  if (error instanceof Error && error.stack) {
+    const stackMatch = error.stack.match(/:([0-9]+):/);
+    if (stackMatch) {
+      const stackLine = parseInt(stackMatch[1]);
+      // Ajustar para a linha original do código PETEQS
+      if (stackLine > 0 && stackLine <= lines.length) {
+        lineNumber = stackLine;
+        problemCode = lines[stackLine - 1]?.trim() || '';
+      }
+    }
+  }
+
+  return {
+    message: errorMessage,
+    line: lineNumber,
+    type: errorType,
+    code: problemCode,
+  };
+}
+
+function formatErrorMessage(errorDetails: {
+  message: string;
+  line: number;
+  type: string;
+  code?: string;
+}): string {
+  let formatted = `❌ ${errorDetails.type}\n`;
+  formatted += `📍 Linha ${errorDetails.line}\n`;
+  
+  if (errorDetails.code) {
+    formatted += `📝 Código: ${errorDetails.code}\n`;
+  }
+  
+  formatted += `💬 Detalhes: ${errorDetails.message}`;
+  
+  return formatted;
+}
+
 export function interpretPETEQS(code: string): ExecutionResult {
   try {
     const translatedCode = PeteqsCore.translate(code);
@@ -300,12 +396,13 @@ export function interpretPETEQS(code: string): ExecutionResult {
       translatedCode,
     };
   } catch (error) {
-    const errorMessage =
-      error instanceof Error ? error.message : String(error);
+    // Analisar o erro para extrair informações detalhadas
+    const errorDetails = parseError(code, error);
 
     return {
       output: '',
-      error: `Erro na execução: ${errorMessage}`,
+      error: formatErrorMessage(errorDetails),
+      errorDetails,
       translatedCode: '',
     };
   }

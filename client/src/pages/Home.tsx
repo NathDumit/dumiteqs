@@ -203,7 +203,7 @@ export default function Home() {
               <CardContent>
                 <div className="bg-green-950 rounded-lg p-4 min-h-32 max-h-48 overflow-y-auto font-mono text-sm text-green-300 whitespace-pre-wrap break-words">
                   {error ? (
-                    <div className="text-red-400">{error}</div>
+                    <div className="text-red-300 whitespace-pre-line">{error}</div>
                   ) : output ? (
                     <div
                       dangerouslySetInnerHTML={{
