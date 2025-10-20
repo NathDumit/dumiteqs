@@ -58,6 +58,9 @@ const PeteqsHelper = {
         line = line.replace(/^\s*retorna\s+/i, 'resultado <- ');
         // Converter CHAMAR para chamada direta
         line = line.replace(/^\s*chamar\s+/i, '');
+        // Remover anotacoes de tipo
+        line = line.replace(/\s*saidas\s*:\s*/gi, '');
+        line = line.replace(/\s*entradas\s*:\s*/gi, '');
         return line.trim();
       })
       .filter(line => line && !line.startsWith('//'));
@@ -81,9 +84,15 @@ const PeteqsHelper = {
     expr = expr.replace(/\s+=\s+/g, ' === ');
     expr = expr.replace(/\s+<>\s+/g, ' !== ');
     expr = expr.replace(/\bMOD\b/gi, '%');
+    expr = expr.replace(/\bmod\b/gi, '%');
     expr = expr.replace(/\babs\(/gi, 'Math.abs(');
     expr = expr.replace(/\bsqrt\(/gi, 'Math.sqrt(');
     expr = expr.replace(/\bpow\(/gi, 'Math.pow(');
+    expr = expr.replace(/\bfloor\(/gi, 'Math.floor(');
+    expr = expr.replace(/\bceil\(/gi, 'Math.ceil(');
+    expr = expr.replace(/\bround\(/gi, 'Math.round(');
+    expr = expr.replace(/\bmax\(/gi, 'Math.max(');
+    expr = expr.replace(/\bmin\(/gi, 'Math.min(');
     
     return expr;
   },
@@ -210,10 +219,9 @@ const PeteqsHelper = {
 `;
 
     try {
-      console.log('Generated JS Code:', jsCode);
       eval(jsCode);
     } catch (e: any) {
-      console.error('JS Error:', e);
+      console.error('JS Error:', e, 'Code:', jsCode);
       target.innerHTML = `Erro ao executar código: ${e.message}`;
     }
   },
@@ -258,7 +266,7 @@ const PeteqsHelper = {
     // LEIA - lê entrada do usuário
     if (line.match(/^leia\s+/i)) {
       const varname = line.replace(/^leia\s+/i, '').trim();
-      return { code: `${varname} = prompt('Insira o valor da variável ${varname}'); if(!isNaN(${varname})) { ${varname} = Number(${varname}); }`, skipLines: 0 };
+      return { code: `if (typeof ${varname} === 'undefined') { var ${varname}; } ${varname} = prompt('Insira o valor da variável ${varname}'); if(!isNaN(${varname})) { ${varname} = Number(${varname}); }`, skipLines: 0 };
     }
 
     // PARA - loop com contador
@@ -502,6 +510,14 @@ for (let pq_repita_i = 0; pq_repita_i < ${times}; pq_repita_i++) {
       if (varPart === 'resultado') {
         const converted = this.convertExpression(exprPart);
         return { code: `pq_func_resultado = ${converted};`, skipLines: 0 };
+      }
+      
+      // Verificar se eh atribuicao de array
+      if (varPart.includes('[')) {
+        const arrayMatch = varPart.match(/(\w+)/);
+        const arrayName = arrayMatch ? arrayMatch[1] : '';
+        const converted = this.convertExpression(exprPart);
+        return { code: `if (typeof ${arrayName} === 'undefined') { var ${arrayName} = []; } ${varPart} = ${converted};`, skipLines: 0 };
       }
       
       const converted = this.convertExpression(exprPart);
