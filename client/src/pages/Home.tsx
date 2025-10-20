@@ -63,15 +63,14 @@ export default function Home() {
   const [code, setCode] = useState(EXAMPLES.hello);
   const [output, setOutput] = useState('');
   const [error, setError] = useState('');
-  const [translatedCode, setTranslatedCode] = useState('');
+
   const [isRunning, setIsRunning] = useState(false);
-  const [showTranslated, setShowTranslated] = useState(false);
 
   const handleExecute = () => {
     setIsRunning(true);
     setError('');
     setOutput('');
-    setTranslatedCode('');
+
 
     try {
       const result = interpretPETEQS(code);
@@ -82,9 +81,7 @@ export default function Home() {
         setOutput(result.output || '(Nenhuma saída)');
       }
       
-      if (result.translatedCode) {
-        setTranslatedCode(result.translatedCode);
-      }
+
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro desconhecido');
     } finally {
@@ -96,7 +93,7 @@ export default function Home() {
     setCode(EXAMPLES[exampleKey]);
     setOutput('');
     setError('');
-    setTranslatedCode('');
+
   };
 
   const handleCopyCode = () => {
@@ -111,7 +108,7 @@ export default function Home() {
     setCode(EXAMPLES.hello);
     setOutput('');
     setError('');
-    setTranslatedCode('');
+
   };
 
   return (
@@ -253,30 +250,7 @@ export default function Home() {
               </CardContent>
             </Card>
 
-            {/* Translated Code Toggle */}
-            {translatedCode && (
-              <Card className="bg-green-800 border-green-700">
-                <CardHeader>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowTranslated(!showTranslated)}
-                    className="w-full justify-start text-white hover:bg-green-700"
-                  >
-                    <span className="text-xs">
-                      {showTranslated ? '▼' : '▶'} Código JavaScript Traduzido
-                    </span>
-                  </Button>
-                </CardHeader>
-                {showTranslated && (
-                  <CardContent>
-                    <div className="bg-green-950 rounded-lg p-3 max-h-48 overflow-y-auto font-mono text-xs text-green-300 whitespace-pre-wrap break-words">
-                      {translatedCode}
-                    </div>
-                  </CardContent>
-                )}
-              </Card>
-            )}
+
           </div>
         </div>
 
