@@ -253,8 +253,8 @@ const PeteqsHelper = {
     // IMPRIMA - imprime sem quebra de linha
     if (line.match(/^imprima\s+/i)) {
       const expr = line.replace(/^imprima\s+/i, '').trim();
-      // Se tiver + para concatenação, tratar como uma única expressão
-      if (expr.includes('+')) {
+      // Se tiver + para concatenacao ou [ para array, tratar como uma unica expressao
+      if (expr.includes('+') || expr.includes('[')) {
         const converted = this.convertExpression(expr);
         return { code: `PQ_print(target, ${converted});`, skipLines: 0 };
       }
