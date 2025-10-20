@@ -90,7 +90,7 @@ const PeteqsHelper = {
     let jsCode = `
 (function(target) {
   let loopStart = Date.now();
-  let resultado = undefined;
+  let pq_resultado = undefined;
   
   function PQ_print(t, ...args) {
     for (let arg of args) {
