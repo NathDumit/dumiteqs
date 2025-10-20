@@ -54,6 +54,10 @@ const PeteqsHelper = {
     return code
       .split('\n')
       .map(line => {
+        // Remover comentarios
+        if (line.includes('//')) {
+          line = line.substring(0, line.indexOf('//')).trim();
+        }
         // Converter RETORNA para resultado <-
         line = line.replace(/^\s*retorna\s+/i, 'resultado <- ');
         // Converter CHAMAR para chamada direta
