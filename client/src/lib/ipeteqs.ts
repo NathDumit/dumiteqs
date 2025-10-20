@@ -1,7 +1,7 @@
 /**
- * DUMITEQS - Interpretador PETEQS 100% Compatível
- * Baseado no código original do ipeteqsJS
- * https://github.com/LeonNasc/ipeteqsJS
+ * DUMITEQS - Interpretador PETEQS completo baseado no ipeteqsJS original
+ * Código original de Leon de França Nascimento
+ * Adaptado para TypeScript/React
  */
 
 export interface InterpretResult {
@@ -24,22 +24,17 @@ export function interpretPETEQS(code: string): InterpretResult {
 
 class PETEQSInterpreter {
   private output: string = '';
-  private loopStart: number = 0;
+  private target: any = { innerHTML: '' };
 
   interpret(code: string): InterpretResult {
     try {
       this.output = '';
+      this.target = { innerHTML: '' };
+
+      // Usar o núcleo de interpretação
+      PeteqsHelper.execute(code, this.target);
       
-      // Normalizar código
-      code = this.normalize(code);
-      
-      // Converter PETEQS para JavaScript
-      const jsCode = this.convert(code);
-      
-      // Executar código JavaScript
-      this.execute(jsCode);
-      
-      return { output: this.output.trimEnd() };
+      return { output: this.target.innerHTML.trimEnd() };
     } catch (error: any) {
       return {
         output: '',
@@ -47,294 +42,507 @@ class PETEQSInterpreter {
       };
     }
   }
+}
 
-  private normalize(code: string): string {
-    // Remover comentários
-    code = code.replace(/\{.*?\}/g, '');
-    
-    // Normalizar quebras de linha
-    code = code.replace(/\r\n/g, '\n');
-    
-    // Remover espaços em branco desnecessários
-    code = code.replace(/^\s+/gm, '');
-    code = code.replace(/\s+$/gm, '');
-    
-    return code;
+// Função de impressão global
+function PQ_print(target: any, ...args: any[]): void {
+  for (let arg of args) {
+    if (arg !== undefined && arg !== null) {
+      if (typeof arg === 'boolean') {
+        arg = arg.toString();
+      }
+      target.innerHTML += arg;
+    }
   }
-
-  private convert(code: string): string {
-    let jsCode = '';
-    let lines = code.split('\n').filter(line => line.trim().length > 0);
-    
-    jsCode += `
-let loopStart = Date.now();
-let PQ_output = '';
-
-function PQ_print(value) {
-  PQ_output += String(value);
 }
 
-function PQ_println(value) {
-  PQ_output += String(value) + '\\n';
-}
+// Núcleo da funcionalidade do PETEQS
+const PeteqsCore = {
+  /**
+   * Função de impressão: Converte a expressão a ser imprimida pela função PQ_print
+   */
+  imprima: function (args: string = ''): string {
+    let statement = PeteqsHelper.exp_converter(args.replace(/^imprimaln|^imprima/gi, ''));
+    return `PQ_print(target,${statement});`;
+  },
 
-`;
+  /**
+   * Função de impressão com nova linha
+   */
+  imprimaln: function (args: string = ''): string {
+    return PeteqsCore.imprima(args) + "\nPQ_print(target,'<br>');";
+  },
 
-    let i = 0;
-    while (i < lines.length) {
-      const line = lines[i].trim();
-      
-      // IMPRIMALN
-      if (line.match(/^IMPRIMALN\b/i)) {
-        const expr = line.replace(/^IMPRIMALN\s+/i, '').trim();
-        jsCode += `PQ_println(${this.convertExpression(expr)});\n`;
-      }
-      // IMPRIMA
-      else if (line.match(/^IMPRIMA\b/i)) {
-        const expr = line.replace(/^IMPRIMA\s+/i, '').trim();
-        jsCode += `PQ_print(${this.convertExpression(expr)});\n`;
-      }
-      // LEIA
-      else if (line.match(/^LEIA\b/i)) {
-        const varName = line.replace(/^LEIA\s+/i, '').trim();
-        jsCode += `${varName} = prompt("Digite um valor para ${varName}:") || "";\n`;
-        jsCode += `if(!isNaN(${varName})) ${varName} = Number(${varName});\n`;
-      }
-      // Atribuição
-      else if (line.includes('<-')) {
-        jsCode += this.convertAssignment(line) + ';\n';
-      }
-      // PARA loop
-      else if (line.match(/^PARA\s+/i)) {
-        const forMatch = line.match(/^PARA\s+(\w+)\s*<-\s*(.+?)\s+ATE\s+(.+?)\s+FACA/i);
-        if (forMatch) {
-          const [, loopVar, startExpr, endExpr] = forMatch;
-          jsCode += `for(let ${loopVar} = ${this.convertExpression(startExpr)}; ${loopVar} <= ${this.convertExpression(endExpr)}; ${loopVar}++) {\n`;
-          
-          // Find matching FIM PARA
-          let loopDepth = 1;
-          let j = i + 1;
-          while (j < lines.length && loopDepth > 0) {
-            const currentLine = lines[j].trim();
-            if (currentLine.match(/^PARA\s+/i)) loopDepth++;
-            if (currentLine.match(/^FIM\s+PARA/i) || currentLine.match(/^PROXIMO/i)) {
-              loopDepth--;
-              if (loopDepth === 0) break;
-            }
-            j++;
-          }
-          
-          // Process loop body
-          for (let k = i + 1; k < j; k++) {
-            const bodyLine = lines[k].trim();
-            if (!bodyLine.match(/^FIM\s+PARA/i) && !bodyLine.match(/^PROXIMO/i)) {
-              jsCode += this.convertLine(bodyLine) + '\n';
-            }
-          }
-          
-          jsCode += '}\n';
-          i = j;
+  /**
+   * Função de entrada
+   */
+  leia: function (linha: string): string {
+    let code = '';
+    linha = linha.substring(4, linha.length); // Remove o leia
+
+    // Verifica a existência de um vetor e o inicializa caso não exista
+    code = PeteqsHelper.handle_vectors(linha) + '\n';
+    code += PeteqsHelper.get_input(PeteqsHelper.has_vector(linha), linha);
+
+    // Garante que os números sejam números
+    return code + `\nif(!isNaN(${linha})){
+      ${linha} = Number(${linha});
+    }`;
+  },
+
+  /**
+   * Função de atribuição
+   */
+  atribui: function (args: string): string {
+    args = PeteqsHelper.exp_converter(args);
+
+    if (PeteqsHelper.has_vector(args)) {
+      args = PeteqsHelper.handle_vectors(args) + '\n' + args;
+    }
+
+    return args.replace(/<-/, '=');
+  },
+
+  /**
+   * Função condicional SE
+   */
+  se: function (cond: string): string {
+    cond = cond.replace(/se/gi, '');
+
+    if (cond.match(/então|entao/gi)) {
+      cond = cond.replace(/então|entao/gi, '');
+    }
+
+    cond = PeteqsHelper.exp_converter(cond.trim());
+    return `if(${cond}){`;
+  },
+
+  /**
+   * Função SENÃO
+   */
+  senao: function (linha: string): string {
+    return '} else {';
+  },
+
+  /**
+   * Função ENQUANTO
+   */
+  enquanto: function (variaveis: string[]): string {
+    let condicao = variaveis[0].trim();
+    condicao = PeteqsHelper.exp_converter(condicao);
+
+    let code = `
+      loopStart = Date.now();
+      while(true){
+        if(Date.now() - loopStart > 30000){
+          PQ_print(target,'Erro no código - Loop demorou demais. Verifique se existe um loop infinito.');
+          break;
         }
+        if(!(${condicao})){
+          break;
+        }
+    `;
+    return code;
+  },
+
+  /**
+   * Função PARA
+   */
+  para: function (variaveis: string[]): string {
+    let variavel = variaveis[0];
+    let comeco = variaveis[1].trim();
+    let fim = variaveis[2].trim();
+
+    // Converter expressões
+    comeco = PeteqsHelper.exp_converter(comeco);
+    fim = PeteqsHelper.exp_converter(fim);
+
+    let code = `
+      loopStart = Date.now();
+      var ${variavel} = ${comeco};
+      if(${fim}>${comeco}){
+        increment = true;
+        ${variavel}--;
+        var condition_${variavel} = '${variavel} < ${fim}';
       }
-      // SE/ENTAO
-      else if (line.match(/^SE\s+/i)) {
-        const seMatch = line.match(/^SE\s+(.+?)\s+ENTAO/i);
-        if (seMatch) {
-          const [, cond] = seMatch;
-          jsCode += `if(${this.convertCondition(cond)}) {\n`;
-          
-          // Find matching FIM SE or SENAO
-          let condDepth = 1;
-          let j = i + 1;
-          let elseStart = -1;
-          
-          while (j < lines.length && condDepth > 0) {
-            const condLine = lines[j].trim();
-            if (condLine.match(/^SE\s+/i)) condDepth++;
-            if (condLine.match(/^FIM\s+SE/i)) {
-              condDepth--;
-              if (condDepth === 0) break;
-            }
-            if (condLine.match(/^SENAO/i) && condDepth === 1) {
-              elseStart = j;
-            }
-            j++;
-          }
-          
-          // Process IF body
-          for (let k = i + 1; k < (elseStart > 0 ? elseStart : j); k++) {
-            const bodyLine = lines[k].trim();
-            if (!bodyLine.match(/^SENAO/i) && !bodyLine.match(/^FIM\s+SE/i)) {
-              jsCode += this.convertLine(bodyLine) + '\n';
-            }
-          }
-          
-          // Process ELSE if exists
-          if (elseStart > 0) {
-            jsCode += '} else {\n';
-            for (let k = elseStart + 1; k < j; k++) {
-              const bodyLine = lines[k].trim();
-              if (!bodyLine.match(/^FIM\s+SE/i)) {
-                jsCode += this.convertLine(bodyLine) + '\n';
+      else{
+        increment = false;
+        ${variavel}++;
+        var condition_${variavel} = '${variavel} > ${fim}';
+      }
+      while(true){
+        if(Date.now() - loopStart > 30000){
+          PQ_print(target,'Erro no código - Loop demorou demais. Verifique se existe um loop infinito.');
+          break;
+        }
+        if(!eval(condition_${variavel})){
+          break;
+        }
+        if(increment){
+          ${variavel}++;
+        }else{
+          --${variavel};
+        }
+    `;
+    return code;
+  },
+
+  /**
+   * Função REPITA
+   */
+  repita: function (vezes: string): string {
+    vezes = PeteqsHelper.exp_converter(vezes.trim());
+    let code = `
+      loopStart = Date.now();
+      var repita_counter = 0;
+      while(repita_counter < ${vezes}){
+        if(Date.now() - loopStart > 30000){
+          PQ_print(target,'Erro no código - Loop demorou demais. Verifique se existe um loop infinito.');
+          break;
+        }
+        repita_counter++;
+    `;
+    return code;
+  },
+
+  /**
+   * Função PRÓXIMO (fecha loops)
+   */
+  proximo: function (): string {
+    return '}';
+  },
+
+  /**
+   * Função FIM
+   */
+  fim: function (linha: string): string {
+    if (PeteqsHelper.in_function && !linha.match(/para|se|enquanto|próximo|proximo/gi)) {
+      if (PeteqsHelper.vars.length > 0) {
+        let funcvar = PeteqsHelper.vars.peep();
+        let conversion = `${funcvar}= typeof resultado != "undefined" ? resultado : ${funcvar};`;
+        return `${conversion}\nreturn ${PeteqsHelper.vars.pop()}; \n}`;
+      } else {
+        return '}';
+      }
+
+      // Remove o flag da função atual da pilha de funções
+      PeteqsHelper.in_function.pop();
+    }
+    return '}';
+  },
+
+  /**
+   * Função FUNÇÃO
+   */
+  funcao: function (linha: string): string {
+    // Ex.: FUNÇÃO somar(a, b)
+    let funcName = linha.replace(/função|function/gi, '').trim();
+    let params = funcName.match(/\((.*?)\)/);
+
+    if (params) {
+      funcName = funcName.replace(/\(.*?\)/gi, '').trim();
+      let paramList = params[1];
+      PeteqsHelper.vars.push(funcName);
+      PeteqsHelper.in_function.push(funcName);
+      return `function ${funcName}(${paramList}){`;
+    }
+
+    return `function ${funcName}(){`;
+  },
+
+  /**
+   * Função PROCEDIMENTO
+   */
+  procedimento: function (linha: string): string {
+    // Ex.: PROCEDIMENTO somar(a, b)
+    let procName = linha.replace(/procedimento|procedure/gi, '').trim();
+    let params = procName.match(/\((.*?)\)/);
+
+    if (params) {
+      procName = procName.replace(/\(.*?\)/gi, '').trim();
+      let paramList = params[1];
+      PeteqsHelper.in_function.push(procName);
+      return `function ${procName}(${paramList}){`;
+    }
+
+    PeteqsHelper.in_function.push(procName);
+    return `function ${procName}(){`;
+  },
+
+  /**
+   * Função CHAMAR (chamada de procedimento/função)
+   */
+  chamar: function (linha: string): string {
+    linha = linha.replace(/chamar/gi, '').trim();
+    return `${linha};`;
+  },
+
+  /**
+   * Função RETORNA
+   */
+  retorna: function (args: string): string {
+    let statement = PeteqsHelper.exp_converter(args.replace(/retorna/gi, '').trim());
+    return `resultado = ${statement}; return resultado;`;
+  }
+};
+
+// Helper do PETEQS
+const PeteqsHelper = {
+  vars: [] as string[],
+  vectors: [] as string[],
+  in_function: [] as string[],
+  in_programa: false,
+  operators: [' + ', ' - ', ' * ', '/', ' mod ', ' <> ', '=', ' E ', ' OU ', ' NÃO ', 'VERDADEIRO', 'FALSO'],
+  reserved_words: [/^início|^inicio/gi, /^fim/gi, /^próximo|^proximo/gi, /^senão|^senao/gi, /^função|^funcao/gi, /^programa/gi],
+
+  purge: function (): void {
+    this.vars = [];
+    this.vectors = [];
+    this.in_function = [];
+  },
+
+  /**
+   * Converte operadores PETEQS para JavaScript
+   */
+  exp_converter: function (linha: string): string {
+    this.operators.forEach((operator) => {
+      switch (operator) {
+        case '/':
+          if (linha.match(/(?!^).\/./)) {
+            if (!linha.match(/(?!^)\d\.\d/g)) {
+              let divisoes = linha.match(/(?!^)[^\w\<\-](\b.*\/.*\b)/g);
+              if (divisoes && Array.isArray(divisoes)) {
+                divisoes.forEach((match: string) => {
+                  if (divisoes && divisoes.length === 1 && divisoes[0] === linha) {
+                    linha = linha.replace(match, '$&>>0');
+                    return;
+                  }
+                  linha = linha.replace(match, '($&>>0)');
+                });
               }
             }
           }
-          
-          jsCode += '}\n';
-          i = j;
-        }
+          break;
+        case ' - ':
+          linha = linha.replace(/–/g, '-');
+          break;
+        case ' mod ':
+          linha = linha.replace(/[^\w]mod[^\w]/gi, '%');
+          break;
+        case '=':
+          linha = linha.replace(/[^<>!]=+/g, ' == ');
+          break;
+        case ' <> ':
+          linha = linha.replace(/<>/g, ' != ');
+          break;
+        case ' E ':
+          linha = linha.replace(/ E /gi, ' && ');
+          break;
+        case ' OU ':
+          linha = linha.replace(/ OU /gi, ' || ');
+          break;
+        case ' NÃO ':
+          linha = linha.replace(/ NÃO /gi, '!');
+          break;
+        case 'VERDADEIRO':
+          linha = linha.replace(/verdadeiro/gi, 'true');
+          break;
+        case 'FALSO':
+          linha = linha.replace(/falso/gi, 'false');
+          break;
       }
-      // ENQUANTO loop
-      else if (line.match(/^ENQUANTO\s+/i)) {
-        const whileMatch = line.match(/^ENQUANTO\s+(.+?)\s+FACA/i);
-        if (whileMatch) {
-          const [, cond] = whileMatch;
-          jsCode += `while(${this.convertCondition(cond)}) {\n`;
-          jsCode += `if(Date.now() - loopStart > 30000) { throw new Error('Loop infinito detectado'); break; }\n`;
-          
-          // Find matching FIM ENQUANTO
-          let loopDepth = 1;
-          let j = i + 1;
-          while (j < lines.length && loopDepth > 0) {
-            const currentLine = lines[j].trim();
-            if (currentLine.match(/^ENQUANTO\s+/i)) loopDepth++;
-            if (currentLine.match(/^FIM\s+ENQUANTO/i)) {
-              loopDepth--;
-              if (loopDepth === 0) break;
-            }
-            j++;
-          }
-          
-          // Process loop body
-          for (let k = i + 1; k < j; k++) {
-            const bodyLine = lines[k].trim();
-            if (!bodyLine.match(/^FIM\s+ENQUANTO/i)) {
-              jsCode += this.convertLine(bodyLine) + '\n';
-            }
-          }
-          
-          jsCode += '}\n';
-          i = j;
+    });
+
+    return linha;
+  },
+
+  /**
+   * Verifica se a linha contém um vetor
+   */
+  has_vector: function (linha: string): boolean {
+    return /\[.*\]/.test(linha);
+  },
+
+  /**
+   * Verifica se a linha contém uma atribuição
+   */
+  has_atribution: function (linha: string): boolean {
+    return /<-/.test(linha);
+  },
+
+  /**
+   * Trata vetores na linha
+   */
+  handle_vectors: function (linha: string): string {
+    let code = '';
+    let vectors = linha.match(/(\w+)\[/g);
+
+    if (vectors) {
+      vectors.forEach((vector) => {
+        vector = vector.trim().replace('[', '');
+        let flag = this.vectors.includes(vector);
+        if (!flag) {
+          this.vectors.push(vector);
+          code += `if(typeof ${vector} === 'undefined' || !${vector}){${vector} = Array("null");}\n`;
         }
-      }
-      // REPITA
-      else if (line.match(/^REPITA\s+/i)) {
-        const repMatch = line.match(/^REPITA\s+(\d+)\s+VEZES/i);
-        if (repMatch) {
-          const [, times] = repMatch;
-          jsCode += `for(let _rep = 0; _rep < ${times}; _rep++) {\n`;
-          
-          // Find matching FIM REPITA
-          let repDepth = 1;
-          let j = i + 1;
-          while (j < lines.length && repDepth > 0) {
-            const currentLine = lines[j].trim();
-            if (currentLine.match(/^REPITA\s+/i)) repDepth++;
-            if (currentLine.match(/^FIM\s+REPITA/i)) {
-              repDepth--;
-              if (repDepth === 0) break;
-            }
-            j++;
-          }
-          
-          // Process loop body
-          for (let k = i + 1; k < j; k++) {
-            const bodyLine = lines[k].trim();
-            if (!bodyLine.match(/^FIM\s+REPITA/i)) {
-              jsCode += this.convertLine(bodyLine) + '\n';
-            }
-          }
-          
-          jsCode += '}\n';
-          i = j;
+      });
+    }
+
+    return code;
+  },
+
+  /**
+   * Obtém entrada do usuário
+   */
+  get_input: function (flag: boolean, varname: string): string {
+    if (flag) {
+      return `${varname} = prompt('Insira o valor da variável do vetor');`;
+    } else {
+      return `${varname} = prompt('Insira o valor da variável ${varname}');`;
+    }
+  },
+
+  /**
+   * Analisa uma linha de código PETEQS
+   */
+  analyze: function (linha: string): string {
+    linha = linha.trim();
+
+    if (linha === '' || linha.startsWith('//')) {
+      return '';
+    }
+
+    if (this.has_atribution(linha)) {
+      if (linha.match(/^para|^PARA/i)) {
+        // Extrair variável, começo e fim
+        let match = linha.match(/para\s+(\w+)\s*<-\s*(.*?)\s+até|ate\s+(.*?)\s+faça|faca/i);
+        if (match) {
+          return PeteqsCore.para([match[1], match[2], match[3]]);
         }
+      } else {
+        return PeteqsCore.atribui(linha);
       }
-      
-      i++;
+    } else if (linha.match(/^imprimaln/i)) {
+      return PeteqsCore.imprimaln(linha);
+    } else if (linha.match(/^imprima/i)) {
+      return PeteqsCore.imprima(linha);
+    } else if (linha.match(/^leia/i)) {
+      return PeteqsCore.leia(linha);
+    } else if (linha.match(/^senão|^senao/i)) {
+      return PeteqsCore.senao(linha);
+    } else if (linha.match(/^se/i)) {
+      return PeteqsCore.se(linha);
+    } else if (linha.match(/^enquanto/i)) {
+      // Extrair condição
+      let match = linha.match(/enquanto\s+(.*?)\s+faça|faca/i);
+      if (match) {
+        return PeteqsCore.enquanto([match[1]]);
+      }
+    } else if (linha.match(/^repita/i)) {
+      // Extrair número de vezes
+      let match = linha.match(/repita\s+(.*?)\s+vezes|VEZES/i);
+      if (match) {
+        return PeteqsCore.repita(match[1]);
+      }
+    } else if (linha.match(/^função|^funcao/i)) {
+      return PeteqsCore.funcao(linha);
+    } else if (linha.match(/^procedimento/i)) {
+      return PeteqsCore.procedimento(linha);
+    } else if (linha.match(/^chamar/i)) {
+      return PeteqsCore.chamar(linha);
+    } else if (linha.match(/^retorna|^return/i)) {
+      return PeteqsCore.retorna(linha);
+    } else if (linha.match(/^fim|^FIM/i)) {
+      return PeteqsCore.fim(linha);
+    } else if (linha.match(/^próximo|^proximo/i)) {
+      return PeteqsCore.proximo();
+    } else if (linha.match(/^programa/i)) {
+      this.in_programa = true;
+      return `/*** ${linha} ***/`;
+    } else if (linha.match(/\(.*\)/)) {
+      // Chamada de função/procedimento
+      let f_name = linha.replace(/\(.*\)/gi, '');
+      return `if (typeof ${f_name} === 'function') {
+        ${linha};
+      }`;
     }
-    
-    jsCode += `\nreturn PQ_output;`;
-    
-    return jsCode;
-  }
 
-  private convertLine(line: string): string {
-    if (line.match(/^IMPRIMALN\b/i)) {
-      const expr = line.replace(/^IMPRIMALN\s+/i, '').trim();
-      return `PQ_println(${this.convertExpression(expr)})`;
-    } else if (line.match(/^IMPRIMA\b/i)) {
-      const expr = line.replace(/^IMPRIMA\s+/i, '').trim();
-      return `PQ_print(${this.convertExpression(expr)})`;
-    } else if (line.match(/^LEIA\b/i)) {
-      const varName = line.replace(/^LEIA\s+/i, '').trim();
-      return `${varName} = prompt("Digite um valor para ${varName}:") || ""; if(!isNaN(${varName})) ${varName} = Number(${varName})`;
-    } else if (line.includes('<-')) {
-      return this.convertAssignment(line);
+    return linha;
+  },
+
+  /**
+   * Limpa o código PETEQS
+   */
+  clean_PTQ_code: function (code: string): string[] {
+    code = code.replace(/←/g, '<-');
+    code = code.replace(/→/g, '<-');
+
+    // Normalizar quebras de linha e espaços
+    code = code.replace(/\r\n/g, '\n');
+
+    return code.split('\n');
+  },
+
+  /**
+   * Executa o código PETEQS
+   */
+  execute: function (PQ_code: string, target: any): void {
+    // Limpa as variáveis da execução anterior
+    this.purge();
+
+    let code = `
+(function(target) {
+  let loopStart = Date.now();
+  let increment = true;
+  let condition_i = '';
+  let resultado = undefined;
+  
+  function PQ_print(t, ...args) {
+    for (let arg of args) {
+      if (arg !== undefined && arg !== null) {
+        if (typeof arg === 'boolean') {
+          arg = arg.toString();
+        }
+        t.innerHTML += arg;
+      }
     }
-    return '';
   }
+  
+`;
 
-  private convertAssignment(line: string): string {
-    const [varPart, exprPart] = line.split('<-').map(s => s.trim());
-    const expr = this.convertExpression(exprPart);
-    return `${varPart} = ${expr}`;
-  }
+    let lines = this.clean_PTQ_code(PQ_code);
 
-  private convertExpression(expr: string): string {
-    expr = expr.trim();
-    
-    // String literals
-    if ((expr.startsWith("'") && expr.endsWith("'")) || (expr.startsWith('"') && expr.endsWith('"'))) {
-      return expr;
+    for (let i = 0; i < lines.length; i++) {
+      let analyzed = this.analyze(lines[i]);
+      if (analyzed) {
+        code += '  ' + analyzed + '\n';
+      }
     }
-    
-    // Replace PETEQS operators
-    expr = expr.replace(/\bMOD\b/gi, '%');
-    expr = expr.replace(/\bDIV\b/gi, 'Math.floor');
-    expr = expr.replace(/\babs\s*\(/gi, 'Math.abs(');
-    expr = expr.replace(/\bsqrt\s*\(/gi, 'Math.sqrt(');
-    expr = expr.replace(/\bfloor\s*\(/gi, 'Math.floor(');
-    expr = expr.replace(/\bceil\s*\(/gi, 'Math.ceil(');
-    expr = expr.replace(/\bround\s*\(/gi, 'Math.round(');
-    expr = expr.replace(/\bVERDADEIRO\b/gi, 'true');
-    expr = expr.replace(/\bFALSO\b/gi, 'false');
-    
-    return expr;
-  }
 
-  private convertCondition(cond: string): string {
-    cond = cond.trim();
-    
-    // Remove parentheses first
-    cond = cond.replace(/^\(|\)$/g, '');
-    
-    // Replace logical operators BEFORE comparison operators
-    cond = cond.replace(/\s+E\s+/gi, ' && ');
-    cond = cond.replace(/\s+OU\s+/gi, ' || ');
-    cond = cond.replace(/\bNAO\b/gi, '!');
-    
-    // Replace comparison operators
-    cond = cond.replace(/\s*<>\s*/g, ' !== ');
-    cond = cond.replace(/\s*=\s*/g, ' === ');
-    cond = cond.replace(/\s*<=\s*/g, ' <= ');
-    cond = cond.replace(/\s*>=\s*/g, ' >= ');
-    cond = cond.replace(/\s*<\s*/g, ' < ');
-    cond = cond.replace(/\s*>\s*/g, ' > ');
-    
-    // Replace boolean constants
-    cond = cond.replace(/\bVERDADEIRO\b/gi, 'true');
-    cond = cond.replace(/\bFALSO\b/gi, 'false');
-    
-    return `(${cond})`;
-  }
+    code += `
+})(target);
+`;
 
-  private execute(jsCode: string): void {
     try {
-      const func = new Function(jsCode);
-      this.output = func() || '';
-    } catch (error: any) {
-      throw new Error(error.message);
+      // Executar o código gerado usando eval com contexto apropriado
+      // Usar eval direto para ter acesso ao escopo local
+      eval(code);
+    } catch (e: any) {
+      target.innerHTML = `Erro ao executar código: ${e.message}`;
     }
   }
+};
+
+// Adicionar método peep ao Array
+declare global {
+  interface Array<T> {
+    peep(): T | undefined;
+  }
+}
+
+if (!Array.prototype.peep) {
+  Array.prototype.peep = function () {
+    return this[this.length - 1];
+  };
 }
 

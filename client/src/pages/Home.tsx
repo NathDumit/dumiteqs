@@ -3,9 +3,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { interpretPETEQS } from '@/lib/ipeteqs';
-import { Play, Copy, RotateCcw, BookOpen } from 'lucide-react';
+import { Play, Copy, RotateCcw, BookOpen, Wand2 } from 'lucide-react';
 
-const EXAMPLES = {
+const EXAMPLES: Record<string, string> = {
   hello: `IMPRIMALN 'Olá, Mundo!'`,
   
   variables: `a <- 10
@@ -48,15 +48,61 @@ ENQUANTO i <= 5 FAÇA
 FIM ENQUANTO`,
 
   operadores: `a <- 10
-b <- 5
-IMPRIMALN 'Soma: '
-IMPRIMA a + b
-IMPRIMALN ''
-IMPRIMALN 'Subtração: '
-IMPRIMA a - b
-IMPRIMALN ''
-IMPRIMALN 'Multiplicação: '
-IMPRIMA a * b`,
+	b <- 5
+	IMPRIMALN 'Soma: '
+	IMPRIMA a + b
+	IMPRIMALN ''
+	IMPRIMALN 'Subtração: '
+	IMPRIMA a - b
+	IMPRIMALN ''
+	IMPRIMALN 'Multiplicação: '
+	IMPRIMA a * b`,
+
+  bubbleSort: `PROCEDIMENTO bubbleSort(vetor, n)
+    PARA i <- 1 ATÉ n - 1 FAÇA
+      PARA j <- 1 ATÉ n - i FAÇA
+        SE vetor[j] > vetor[j+1] ENTÃO
+          temp <- vetor[j]
+          vetor[j] <- vetor[j+1]
+          vetor[j+1] <- temp
+        FIM SE
+      FIM PARA
+    FIM PARA
+  FIM PROCEDIMENTO
+
+  vetor_exemplo <- [5, 2, 8, 1, 9]
+  n_exemplo <- 5
+
+  IMPRIMALN 'Vetor original:'
+  PARA i <- 1 ATÉ n_exemplo FAÇA
+    IMPRIMA vetor_exemplo[i]
+    IMPRIMA ' '
+  FIM PARA
+  IMPRIMALN ''
+
+  CHAMAR bubbleSort(vetor_exemplo, n_exemplo)
+
+  IMPRIMALN 'Vetor ordenado:'
+  PARA i <- 1 ATÉ n_exemplo FAÇA
+    IMPRIMA vetor_exemplo[i]
+    IMPRIMA ' '
+  FIM PARA`,
+
+  proceduresFunctions: `FUNCAO soma(a, b)
+    RETORNA a + b
+  FIM FUNCAO
+
+  PROCEDIMENTO imprimeSoma(x, y)
+    resultado <- soma(x, y)
+    IMPRIMALN 'A soma de ' + x + ' e ' + y + ' é: ' + resultado
+  FIM PROCEDIMENTO
+
+  CHAMAR imprimeSoma(10, 5)
+
+  valor1 <- 20
+  valor2 <- 30
+  total <- soma(valor1, valor2)
+  IMPRIMALN 'Total calculado pela função: ' + total`,
 };
 
 export default function Home() {
@@ -94,6 +140,53 @@ export default function Home() {
     setOutput('');
     setError('');
 
+  };
+
+  const formatCode = (codeToFormat: string): string => {
+    // Normalize line endings and remove extra spaces
+    let formatted = codeToFormat.replace(/\r\n/g, '\n').replace(/\s*\n\s*/g, '\n').trim();
+
+    // Add newlines before/after keywords to ensure each statement is on its own line
+    // This is a more robust approach to handle single-line pasted code
+    formatted = formatted
+      .replace(/(PARA|ENQUANTO|SE|REPITA|FUNCAO|PROCEDIMENTO|LEIA|IMPRIMA|IMPRIMALN|RETORNA)/gi, '\n$1')
+      .replace(/(FIM PARA|FIM ENQUANTO|FIM SE|FIM REPITA|FIM FUNCAO|FIM PROCEDIMENTO|SENAO|PROXIMO)/gi, '\n$1')
+      .replace(/(FAÇA|FACA|ENTÃO|ENTAO)/gi, '$1\n');
+
+    // Remove multiple consecutive newlines, leaving only one
+    formatted = formatted.replace(/\n{2,}/g, '\n');
+
+    const lines = formatted.split('\n');
+    let indentLevel = 0;
+    const indentedLines = lines.map(line => {
+      let trimmed = line.trim();
+      
+      // Adjust indent level for closing keywords before applying indent
+      if (trimmed.match(/^(FIM PARA|FIM ENQUANTO|FIM SE|FIM REPITA|FIM FUNCAO|FIM PROCEDIMENTO|SENAO|PROXIMO)/i)) {
+        indentLevel = Math.max(0, indentLevel - 1);
+      }
+
+      const indented = '  '.repeat(indentLevel) + trimmed;
+
+      // Adjust indent level for opening keywords after applying indent
+      if (trimmed.match(/(PARA|ENQUANTO|SE|REPITA|FUNCAO|PROCEDIMENTO).*?(FAÇA|FACA|ENTÃO|ENTAO)?$/i)) {
+        indentLevel++;
+      }
+
+      // Special handling for SENAO, it should decrease then increase indent
+      if (trimmed.match(/^SENAO$/i)) {
+        indentLevel++;
+      }
+      
+      return indented;
+    });
+    
+    return indentedLines.join('\n').trim();
+  };
+
+  const handleFormatCode = () => {
+    const formatted = formatCode(code);
+    setCode(formatted);
   };
 
   const handleCopyCode = () => {
@@ -150,10 +243,21 @@ export default function Home() {
           <div className="lg:col-span-2 space-y-4">
             <Card className="bg-green-800 border-green-700">
               <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2">
-                  <BookOpen className="w-5 h-5 text-green-300" />
-                  Editor de Código
-                </CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-white flex items-center gap-2">
+                      <BookOpen className="w-5 h-5 text-green-300" />
+                      Editor de Código
+                    </CardTitle>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleFormatCode}
+                      className="text-green-300 hover:text-white"
+                      title="Formatar Código"
+                    >
+                      <Wand2 className="w-4 h-4" />
+                    </Button>
+                  </div>
                 <CardDescription className="text-green-300">
                   Escreva seu código DUMITEQS abaixo
                 </CardDescription>
@@ -195,6 +299,32 @@ export default function Home() {
                       {key === 'error' && 'Com Erro'}
                     </Button>
                   ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-green-800 border-green-700">
+              <CardHeader>
+                <CardTitle className="text-white text-sm">Exemplos Avançados</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleLoadExample('bubbleSort')}
+                    className="border-green-600 hover:bg-green-700 text-green-100 capitalize"
+                  >
+                    Bubble Sort
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleLoadExample('proceduresFunctions')}
+                    className="border-green-600 hover:bg-green-700 text-green-100 capitalize"
+                  >
+                    Proc. e Func.
+                  </Button>
                 </div>
               </CardContent>
             </Card>
