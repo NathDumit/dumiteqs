@@ -323,6 +323,139 @@ export default function Home() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Tutorial para Leigos */}
+        <Card className="mt-8 bg-green-800 border-green-700">
+          <CardHeader>
+            <CardTitle className="text-white">📚 Tutorial para Leigos - Começando com PETEQS</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6 text-green-100 text-sm">
+              {/* Seção 1: O que é PETEQS */}
+              <div>
+                <h3 className="font-semibold text-white text-base mb-2">1️⃣ O que é PETEQS?</h3>
+                <p className="mb-3">
+                  PETEQS é uma <strong>pseudolinguagem</strong> criada para ensinar lógica de programação de forma simples e intuitiva. 
+                  Ela usa palavras em português para que você entenda o que está fazendo, sem precisar aprender sintaxe complicada.
+                </p>
+                <p className="text-green-300 bg-green-950 p-3 rounded font-mono text-xs">
+                  Exemplo: <strong>IMPRIMALN 'Olá, Mundo!'</strong> imprime "Olá, Mundo!" na tela
+                </p>
+              </div>
+
+              {/* Seção 2: Conceitos Básicos */}
+              <div>
+                <h3 className="font-semibold text-white text-base mb-2">2️⃣ Conceitos Básicos</h3>
+                <div className="space-y-3">
+                  <div>
+                    <p className="font-semibold text-green-300">Variáveis (caixas para guardar valores)</p>
+                    <p className="text-green-200 mb-2">Uma variável é como uma caixa onde você guarda um valor. Para criar uma:</p>
+                    <p className="text-green-300 bg-green-950 p-2 rounded font-mono text-xs">a &lt;- 10</p>
+                    <p className="text-xs mt-1">Isso cria uma variável chamada "a" e coloca o número 10 dentro dela.</p>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-green-300">Operações Matemáticas</p>
+                    <p className="text-green-200 mb-2">Você pode fazer contas com as variáveis:</p>
+                    <p className="text-green-300 bg-green-950 p-2 rounded font-mono text-xs">b &lt;- a + 5</p>
+                    <p className="text-xs mt-1">Isso pega o valor de "a" (10), soma 5 e guarda o resultado (15) em "b".</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Seção 3: Imprimindo Resultados */}
+              <div>
+                <h3 className="font-semibold text-white text-base mb-2">3️⃣ Imprimindo Resultados na Tela</h3>
+                <p className="mb-3">Para ver o resultado do seu programa, use:</p>
+                <div className="space-y-2">
+                  <div>
+                    <p className="text-green-300 bg-green-950 p-2 rounded font-mono text-xs">IMPRIMALN 'Texto aqui'</p>
+                    <p className="text-xs mt-1">Imprime o texto e pula para a próxima linha</p>
+                  </div>
+                  <div>
+                    <p className="text-green-300 bg-green-950 p-2 rounded font-mono text-xs">IMPRIMA valor</p>
+                    <p className="text-xs mt-1">Imprime o valor SEM pular linha (continua na mesma linha)</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Seção 4: Loops (Repetição) */}
+              <div>
+                <h3 className="font-semibold text-white text-base mb-2">4️⃣ Repetindo Ações (Loops)</h3>
+                <p className="mb-3">Às vezes você quer fazer a mesma coisa várias vezes. Existem dois tipos:</p>
+                <div className="space-y-3">
+                  <div>
+                    <p className="font-semibold text-green-300">PARA - Quando você sabe quantas vezes repetir</p>
+                    <p className="text-green-300 bg-green-950 p-2 rounded font-mono text-xs mb-2">
+                      PARA i &lt;- 1 ATÉ 5 FAÇA<br/>
+                      &nbsp;&nbsp;IMPRIMALN i<br/>
+                      FIM PARA
+                    </p>
+                    <p className="text-xs">Isso imprime os números de 1 a 5, um em cada linha.</p>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-green-300">REPITA N VEZES - Repetir um número fixo de vezes</p>
+                    <p className="text-green-300 bg-green-950 p-2 rounded font-mono text-xs mb-2">
+                      REPITA 3 VEZES<br/>
+                      &nbsp;&nbsp;IMPRIMALN 'Olá!'<br/>
+                      FIM REPITA
+                    </p>
+                    <p className="text-xs">Isso imprime "Olá!" exatamente 3 vezes.</p>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-green-300">ENQUANTO - Repetir enquanto uma condição for verdadeira</p>
+                    <p className="text-green-300 bg-green-950 p-2 rounded font-mono text-xs mb-2">
+                      i &lt;- 1<br/>
+                      ENQUANTO i &lt;= 5 FAÇA<br/>
+                      &nbsp;&nbsp;IMPRIMALN i<br/>
+                      &nbsp;&nbsp;i &lt;- i + 1<br/>
+                      FIM ENQUANTO
+                    </p>
+                    <p className="text-xs">Repete enquanto "i" for menor ou igual a 5.</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Seção 5: Decisões */}
+              <div>
+                <h3 className="font-semibold text-white text-base mb-2">5️⃣ Tomando Decisões (SE/ENTÃO)</h3>
+                <p className="mb-3">Use SE quando você quer fazer algo APENAS se uma condição for verdadeira:</p>
+                <p className="text-green-300 bg-green-950 p-2 rounded font-mono text-xs mb-2">
+                  numero &lt;- 10<br/>
+                  SE numero &gt; 5 ENTÃO<br/>
+                  &nbsp;&nbsp;IMPRIMALN 'Número é grande!'<br/>
+                  SENÃO<br/>
+                  &nbsp;&nbsp;IMPRIMALN 'Número é pequeno!'<br/>
+                  FIM SE
+                </p>
+                <p className="text-xs">Se o número for maior que 5, imprime "Número é grande!", caso contrário imprime "Número é pequeno!"</p>
+              </div>
+
+              {/* Seção 6: Dicas Práticas */}
+              <div>
+                <h3 className="font-semibold text-white text-base mb-2">💡 Dicas Práticas</h3>
+                <ul className="space-y-2 text-xs">
+                  <li>✅ <strong>Comece simples:</strong> Teste primeiro um IMPRIMALN para ver se funciona</li>
+                  <li>✅ <strong>Use nomes claros:</strong> Use "idade" em vez de "a" para variáveis</li>
+                  <li>✅ <strong>Indente o código:</strong> Coloque espaços antes de linhas dentro de loops e SE</li>
+                  <li>✅ <strong>Teste os exemplos:</strong> Clique nos botões de exemplo para ver como funcionam</li>
+                  <li>✅ <strong>Leia os erros:</strong> Se der erro, leia a mensagem - ela te ajuda a corrigir</li>
+                </ul>
+              </div>
+
+              {/* Seção 7: Próximos Passos */}
+              <div>
+                <h3 className="font-semibold text-white text-base mb-2">🚀 Próximos Passos</h3>
+                <p className="mb-3">Agora que você conhece o básico:</p>
+                <ol className="space-y-2 text-xs list-decimal list-inside">
+                  <li>Clique em um dos exemplos acima para ver como funciona</li>
+                  <li>Modifique o código e veja o que muda</li>
+                  <li>Crie seu próprio programa do zero</li>
+                  <li>Combine loops, decisões e variáveis para criar programas mais complexos</li>
+                </ol>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </main>
     </div>
   );
