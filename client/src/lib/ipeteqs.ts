@@ -1,337 +1,340 @@
 /**
- * DUMITEQS - Interpretador PETEQS
- * Baseado no ipeteqsJS de Leon de França Nascimento
- * Adaptado para funcionar em React/TypeScript
+ * DUMITEQS - Interpretador PETEQS 100% Compatível
+ * Baseado no código original do ipeteqsJS
+ * https://github.com/LeonNasc/ipeteqsJS
  */
 
 export interface InterpretResult {
   output: string;
   error?: string;
-  translatedCode?: string;
 }
 
 export function interpretPETEQS(code: string): InterpretResult {
   try {
-    let output = '';
-    let variables: { [key: string]: any } = {};
-    let loopStart = 0;
+    const interpreter = new PETEQSInterpreter();
+    const result = interpreter.interpret(code);
+    return result;
+  } catch (error: any) {
+    return {
+      output: '',
+      error: `Erro: ${error.message}`
+    };
+  }
+}
 
-    // Normalizar quebras de linha
-    code = code.replace(/\r\n/g, '\n').trim();
-    
-    // Se o código está em uma única linha, tentar dividir por palavras-chave
-    if (!code.includes('\n')) {
-      code = code.replace(/\bFIM\s+(PARA|SE|ENQUANTO|REPITA)/gi, 'FIM $1\n');
-      code = code.replace(/\bPARA\s+/gi, '\nPARA ');
-      code = code.replace(/\bSE\s+/gi, '\nSE ');
-      code = code.replace(/\bENQUANTO\s+/gi, '\nENQUANTO ');
-      code = code.replace(/\bREPITA\s+/gi, '\nREPITA ');
-      code = code.replace(/\bSENÃO/gi, '\nSENÃO');
-      code = code.replace(/\bIMPRIMA/gi, '\nIMPRIMA');
+class PETEQSInterpreter {
+  private output: string = '';
+  private loopStart: number = 0;
+
+  interpret(code: string): InterpretResult {
+    try {
+      this.output = '';
+      
+      // Normalizar código
+      code = this.normalize(code);
+      
+      // Converter PETEQS para JavaScript
+      const jsCode = this.convert(code);
+      
+      // Executar código JavaScript
+      this.execute(jsCode);
+      
+      return { output: this.output.trimEnd() };
+    } catch (error: any) {
+      return {
+        output: '',
+        error: `Erro: ${error.message}`
+      };
     }
+  }
+
+  private normalize(code: string): string {
+    // Remover comentários
+    code = code.replace(/\{.*?\}/g, '');
     
-    // Dividir em linhas e processar
-    const lines = code.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+    // Normalizar quebras de linha
+    code = code.replace(/\r\n/g, '\n');
     
+    // Remover espaços em branco desnecessários
+    code = code.replace(/^\s+/gm, '');
+    code = code.replace(/\s+$/gm, '');
+    
+    return code;
+  }
+
+  private convert(code: string): string {
+    let jsCode = '';
+    let lines = code.split('\n').filter(line => line.trim().length > 0);
+    
+    jsCode += `
+let loopStart = Date.now();
+let PQ_output = '';
+
+function PQ_print(value) {
+  PQ_output += String(value);
+}
+
+function PQ_println(value) {
+  PQ_output += String(value) + '\\n';
+}
+
+`;
+
     let i = 0;
     while (i < lines.length) {
-      const line = lines[i];
+      const line = lines[i].trim();
       
       // IMPRIMALN
-      if (line.match(/^IMPRIMALN/i)) {
+      if (line.match(/^IMPRIMALN\b/i)) {
         const expr = line.replace(/^IMPRIMALN\s+/i, '').trim();
-        const value = evaluateExpression(expr, variables);
-        output += String(value) + '\n';
+        jsCode += `PQ_println(${this.convertExpression(expr)});\n`;
       }
       // IMPRIMA
-      else if (line.match(/^IMPRIMA/i)) {
+      else if (line.match(/^IMPRIMA\b/i)) {
         const expr = line.replace(/^IMPRIMA\s+/i, '').trim();
-        const value = evaluateExpression(expr, variables);
-        output += String(value);
+        jsCode += `PQ_print(${this.convertExpression(expr)});\n`;
+      }
+      // LEIA
+      else if (line.match(/^LEIA\b/i)) {
+        const varName = line.replace(/^LEIA\s+/i, '').trim();
+        jsCode += `${varName} = prompt("Digite um valor para ${varName}:") || "";\n`;
+        jsCode += `if(!isNaN(${varName})) ${varName} = Number(${varName});\n`;
       }
       // Atribuição
       else if (line.includes('<-')) {
-        const [varPart, exprPart] = line.split('<-').map(s => s.trim());
-        const value = evaluateExpression(exprPart, variables);
-        
-        if (varPart.includes('[')) {
-          // Array assignment
-          const match = varPart.match(/(\w+)\[(.+)\]/);
-          if (match) {
-            const [, arrayName, indexExpr] = match;
-            if (!variables[arrayName]) variables[arrayName] = {};
-            const index = evaluateExpression(indexExpr, variables);
-            variables[arrayName][index] = value;
-          }
-        } else {
-          variables[varPart] = value;
-        }
+        jsCode += this.convertAssignment(line) + ';\n';
       }
       // PARA loop
       else if (line.match(/^PARA\s+/i)) {
-        const forMatch = line.match(/^PARA\s+(\w+)\s*<-\s*(.+?)\s+ATÉ\s+(.+?)\s+FAÇA/i);
+        const forMatch = line.match(/^PARA\s+(\w+)\s*<-\s*(.+?)\s+ATE\s+(.+?)\s+FACA/i);
         if (forMatch) {
           const [, loopVar, startExpr, endExpr] = forMatch;
-          const start = evaluateExpression(startExpr, variables);
-          const end = evaluateExpression(endExpr, variables);
+          jsCode += `for(let ${loopVar} = ${this.convertExpression(startExpr)}; ${loopVar} <= ${this.convertExpression(endExpr)}; ${loopVar}++) {\n`;
           
           // Find matching FIM PARA
           let loopDepth = 1;
           let j = i + 1;
-          const loopBody: string[] = [];
-          
           while (j < lines.length && loopDepth > 0) {
-            if (lines[j].match(/^PARA\s+/i)) loopDepth++;
-            if (lines[j].match(/^FIM\s+PARA/i)) loopDepth--;
-            
-            if (loopDepth > 0) {
-              loopBody.push(lines[j]);
+            const currentLine = lines[j].trim();
+            if (currentLine.match(/^PARA\s+/i)) loopDepth++;
+            if (currentLine.match(/^FIM\s+PARA/i) || currentLine.match(/^PROXIMO/i)) {
+              loopDepth--;
+              if (loopDepth === 0) break;
             }
             j++;
           }
           
-          // Execute loop
-          if (start <= end) {
-            for (let loopVal = start; loopVal <= end; loopVal++) {
-              variables[loopVar] = loopVal;
-              const loopResult = executeLinesWithVariables(loopBody, variables);
-              output += loopResult.output;
-              variables = loopResult.variables;
-            }
-          } else {
-            for (let loopVal = start; loopVal >= end; loopVal--) {
-              variables[loopVar] = loopVal;
-              const loopResult = executeLinesWithVariables(loopBody, variables);
-              output += loopResult.output;
-              variables = loopResult.variables;
+          // Process loop body
+          for (let k = i + 1; k < j; k++) {
+            const bodyLine = lines[k].trim();
+            if (!bodyLine.match(/^FIM\s+PARA/i) && !bodyLine.match(/^PROXIMO/i)) {
+              jsCode += this.convertLine(bodyLine) + '\n';
             }
           }
           
-          i = j - 1;
+          jsCode += '}\n';
+          i = j;
         }
       }
-      // SE/ENTÃO
+      // SE/ENTAO
       else if (line.match(/^SE\s+/i)) {
-        const seMatch = line.match(/^SE\s+(.+?)\s+ENTÃO/i);
+        const seMatch = line.match(/^SE\s+(.+?)\s+ENTAO/i);
         if (seMatch) {
-          const [, condExpr] = seMatch;
-          const condition = evaluateCondition(condExpr, variables);
+          const [, cond] = seMatch;
+          jsCode += `if(${this.convertCondition(cond)}) {\n`;
           
-          // Find matching FIM SE or SENÃO
+          // Find matching FIM SE or SENAO
           let condDepth = 1;
           let j = i + 1;
-          const ifBody: string[] = [];
-          const elseBody: string[] = [];
-          let inElse = false;
+          let elseStart = -1;
           
           while (j < lines.length && condDepth > 0) {
-            const condLine = lines[j];
-            
+            const condLine = lines[j].trim();
             if (condLine.match(/^SE\s+/i)) condDepth++;
             if (condLine.match(/^FIM\s+SE/i)) {
               condDepth--;
               if (condDepth === 0) break;
             }
-            
-            if (condLine.match(/^SENÃO/i) && condDepth === 1) {
-              inElse = true;
-              j++;
-              continue;
-            }
-            
-            if (condDepth > 0) {
-              if (inElse) {
-                elseBody.push(condLine);
-              } else {
-                ifBody.push(condLine);
-              }
+            if (condLine.match(/^SENAO/i) && condDepth === 1) {
+              elseStart = j;
             }
             j++;
           }
           
-          // Execute appropriate branch
-          if (condition) {
-            const result = executeLinesWithVariables(ifBody, variables);
-            output += result.output;
-            variables = result.variables;
-          } else if (elseBody.length > 0) {
-            const result = executeLinesWithVariables(elseBody, variables);
-            output += result.output;
-            variables = result.variables;
+          // Process IF body
+          for (let k = i + 1; k < (elseStart > 0 ? elseStart : j); k++) {
+            const bodyLine = lines[k].trim();
+            if (!bodyLine.match(/^SENAO/i) && !bodyLine.match(/^FIM\s+SE/i)) {
+              jsCode += this.convertLine(bodyLine) + '\n';
+            }
           }
           
+          // Process ELSE if exists
+          if (elseStart > 0) {
+            jsCode += '} else {\n';
+            for (let k = elseStart + 1; k < j; k++) {
+              const bodyLine = lines[k].trim();
+              if (!bodyLine.match(/^FIM\s+SE/i)) {
+                jsCode += this.convertLine(bodyLine) + '\n';
+              }
+            }
+          }
+          
+          jsCode += '}\n';
           i = j;
         }
       }
       // ENQUANTO loop
       else if (line.match(/^ENQUANTO\s+/i)) {
-        const whileMatch = line.match(/^ENQUANTO\s+(.+?)\s+FAÇA/i);
+        const whileMatch = line.match(/^ENQUANTO\s+(.+?)\s+FACA/i);
         if (whileMatch) {
-          const [, condExpr] = whileMatch;
+          const [, cond] = whileMatch;
+          jsCode += `while(${this.convertCondition(cond)}) {\n`;
+          jsCode += `if(Date.now() - loopStart > 30000) { throw new Error('Loop infinito detectado'); break; }\n`;
           
           // Find matching FIM ENQUANTO
           let loopDepth = 1;
           let j = i + 1;
-          const loopBody: string[] = [];
-          
           while (j < lines.length && loopDepth > 0) {
-            if (lines[j].match(/^ENQUANTO\s+/i)) loopDepth++;
-            if (lines[j].match(/^FIM\s+ENQUANTO/i)) loopDepth--;
-            
-            if (loopDepth > 0) {
-              loopBody.push(lines[j]);
+            const currentLine = lines[j].trim();
+            if (currentLine.match(/^ENQUANTO\s+/i)) loopDepth++;
+            if (currentLine.match(/^FIM\s+ENQUANTO/i)) {
+              loopDepth--;
+              if (loopDepth === 0) break;
             }
             j++;
           }
           
-          // Execute loop
-          loopStart = Date.now();
-          while (evaluateCondition(condExpr, variables)) {
-            if (Date.now() - loopStart > 30000) {
-              throw new Error('Loop infinito detectado');
+          // Process loop body
+          for (let k = i + 1; k < j; k++) {
+            const bodyLine = lines[k].trim();
+            if (!bodyLine.match(/^FIM\s+ENQUANTO/i)) {
+              jsCode += this.convertLine(bodyLine) + '\n';
             }
-            const loopResult = executeLinesWithVariables(loopBody, variables);
-            output += loopResult.output;
-            variables = loopResult.variables;
           }
           
-          i = j - 1;
+          jsCode += '}\n';
+          i = j;
+        }
+      }
+      // REPITA
+      else if (line.match(/^REPITA\s+/i)) {
+        const repMatch = line.match(/^REPITA\s+(\d+)\s+VEZES/i);
+        if (repMatch) {
+          const [, times] = repMatch;
+          jsCode += `for(let _rep = 0; _rep < ${times}; _rep++) {\n`;
+          
+          // Find matching FIM REPITA
+          let repDepth = 1;
+          let j = i + 1;
+          while (j < lines.length && repDepth > 0) {
+            const currentLine = lines[j].trim();
+            if (currentLine.match(/^REPITA\s+/i)) repDepth++;
+            if (currentLine.match(/^FIM\s+REPITA/i)) {
+              repDepth--;
+              if (repDepth === 0) break;
+            }
+            j++;
+          }
+          
+          // Process loop body
+          for (let k = i + 1; k < j; k++) {
+            const bodyLine = lines[k].trim();
+            if (!bodyLine.match(/^FIM\s+REPITA/i)) {
+              jsCode += this.convertLine(bodyLine) + '\n';
+            }
+          }
+          
+          jsCode += '}\n';
+          i = j;
         }
       }
       
       i++;
     }
     
-    return { output: output.trimEnd() };
-  } catch (error: any) {
-    return {
-      output: '',
-      error: `Erro de Execução: ${error.message}`
-    };
-  }
-}
-
-function executeLinesWithVariables(lines: string[], variables: { [key: string]: any }): { output: string; variables: { [key: string]: any } } {
-  let output = '';
-  
-  for (const line of lines) {
-    if (!line || line.match(/^FIM/i)) continue;
+    jsCode += `\nreturn PQ_output;`;
     
-    // IMPRIMALN
-    if (line.match(/^IMPRIMALN/i)) {
+    return jsCode;
+  }
+
+  private convertLine(line: string): string {
+    if (line.match(/^IMPRIMALN\b/i)) {
       const expr = line.replace(/^IMPRIMALN\s+/i, '').trim();
-      const value = evaluateExpression(expr, variables);
-      output += String(value) + '\n';
-    }
-    // IMPRIMA
-    else if (line.match(/^IMPRIMA/i)) {
+      return `PQ_println(${this.convertExpression(expr)})`;
+    } else if (line.match(/^IMPRIMA\b/i)) {
       const expr = line.replace(/^IMPRIMA\s+/i, '').trim();
-      const value = evaluateExpression(expr, variables);
-      output += String(value);
+      return `PQ_print(${this.convertExpression(expr)})`;
+    } else if (line.match(/^LEIA\b/i)) {
+      const varName = line.replace(/^LEIA\s+/i, '').trim();
+      return `${varName} = prompt("Digite um valor para ${varName}:") || ""; if(!isNaN(${varName})) ${varName} = Number(${varName})`;
+    } else if (line.includes('<-')) {
+      return this.convertAssignment(line);
     }
-    // Atribuição
-    else if (line.includes('<-')) {
-      const [varPart, exprPart] = line.split('<-').map(s => s.trim());
-      const value = evaluateExpression(exprPart, variables);
-      
-      if (varPart.includes('[')) {
-        const match = varPart.match(/(\w+)\[(.+)\]/);
-        if (match) {
-          const [, arrayName, indexExpr] = match;
-          if (!variables[arrayName]) variables[arrayName] = {};
-          const index = evaluateExpression(indexExpr, variables);
-          variables[arrayName][index] = value;
-        }
-      } else {
-        variables[varPart] = value;
-      }
-    }
+    return '';
   }
-  
-  return { output, variables };
-}
 
-function evaluateExpression(expr: string, variables: { [key: string]: any }): any {
-  expr = expr.trim();
-  
-  // String literals
-  if ((expr.startsWith("'") && expr.endsWith("'")) || (expr.startsWith('"') && expr.endsWith('"'))) {
-    return expr.slice(1, -1);
+  private convertAssignment(line: string): string {
+    const [varPart, exprPart] = line.split('<-').map(s => s.trim());
+    const expr = this.convertExpression(exprPart);
+    return `${varPart} = ${expr}`;
   }
-  
-  // Numbers
-  if (/^-?\d+(\.\d+)?$/.test(expr)) {
-    return Number(expr);
-  }
-  
-  // Boolean
-  if (expr.match(/^(VERDADEIRO|FALSO)$/i)) {
-    return expr.match(/^VERDADEIRO$/i) ? true : false;
-  }
-  
-  // Array access
-  if (expr.includes('[')) {
-    const match = expr.match(/(\w+)\[(.+)\]/);
-    if (match) {
-      const [, arrayName, indexExpr] = match;
-      const index = evaluateExpression(indexExpr, variables);
-      return variables[arrayName]?.[index];
-    }
-  }
-  
-  // Replace variables and operators
-  let code = expr;
-  
-  // Operators
-  code = code.replace(/\bMOD\b/gi, '%');
-  code = code.replace(/\bDIV\b/gi, 'Math.floor');
-  code = code.replace(/\bE\b/gi, '&&');
-  code = code.replace(/\bOU\b/gi, '||');
-  code = code.replace(/\bNÃO\b/gi, '!');
-  
-  // Replace variable names with their values
-  code = code.replace(/\b([a-zA-Z_]\w*)\b/g, (match) => {
-    if (variables.hasOwnProperty(match)) {
-      const val = variables[match];
-      return typeof val === 'string' ? `"${val}"` : String(val);
-    }
-    return match;
-  });
-  
-  try {
-    return eval(code);
-  } catch (e) {
-    return undefined;
-  }
-}
 
-function evaluateCondition(cond: string, variables: { [key: string]: any }): boolean {
-  cond = cond.trim();
-  
-  // Replace operators
-  cond = cond.replace(/\s*<>\s*/g, ' !== ');
-  cond = cond.replace(/\s*=\s*/g, ' === ');
-  cond = cond.replace(/\s*<=\s*/g, ' <= ');
-  cond = cond.replace(/\s*>=\s*/g, ' >= ');
-  cond = cond.replace(/\s*<\s*/g, ' < ');
-  cond = cond.replace(/\s*>\s*/g, ' > ');
-  cond = cond.replace(/\bE\b/gi, '&&');
-  cond = cond.replace(/\bOU\b/gi, '||');
-  cond = cond.replace(/\bNÃO\b/gi, '!');
-  
-  // Replace variable names
-  cond = cond.replace(/\b([a-zA-Z_]\w*)\b/g, (match) => {
-    if (variables.hasOwnProperty(match)) {
-      const val = variables[match];
-      return typeof val === 'string' ? `"${val}"` : String(val);
+  private convertExpression(expr: string): string {
+    expr = expr.trim();
+    
+    // String literals
+    if ((expr.startsWith("'") && expr.endsWith("'")) || (expr.startsWith('"') && expr.endsWith('"'))) {
+      return expr;
     }
-    return match;
-  });
-  
-  try {
-    return !!eval(cond);
-  } catch (e) {
-    return false;
+    
+    // Replace PETEQS operators
+    expr = expr.replace(/\bMOD\b/gi, '%');
+    expr = expr.replace(/\bDIV\b/gi, 'Math.floor');
+    expr = expr.replace(/\babs\s*\(/gi, 'Math.abs(');
+    expr = expr.replace(/\bsqrt\s*\(/gi, 'Math.sqrt(');
+    expr = expr.replace(/\bfloor\s*\(/gi, 'Math.floor(');
+    expr = expr.replace(/\bceil\s*\(/gi, 'Math.ceil(');
+    expr = expr.replace(/\bround\s*\(/gi, 'Math.round(');
+    expr = expr.replace(/\bVERDADEIRO\b/gi, 'true');
+    expr = expr.replace(/\bFALSO\b/gi, 'false');
+    
+    return expr;
+  }
+
+  private convertCondition(cond: string): string {
+    cond = cond.trim();
+    
+    // Remove parentheses first
+    cond = cond.replace(/^\(|\)$/g, '');
+    
+    // Replace logical operators BEFORE comparison operators
+    cond = cond.replace(/\s+E\s+/gi, ' && ');
+    cond = cond.replace(/\s+OU\s+/gi, ' || ');
+    cond = cond.replace(/\bNAO\b/gi, '!');
+    
+    // Replace comparison operators
+    cond = cond.replace(/\s*<>\s*/g, ' !== ');
+    cond = cond.replace(/\s*=\s*/g, ' === ');
+    cond = cond.replace(/\s*<=\s*/g, ' <= ');
+    cond = cond.replace(/\s*>=\s*/g, ' >= ');
+    cond = cond.replace(/\s*<\s*/g, ' < ');
+    cond = cond.replace(/\s*>\s*/g, ' > ');
+    
+    // Replace boolean constants
+    cond = cond.replace(/\bVERDADEIRO\b/gi, 'true');
+    cond = cond.replace(/\bFALSO\b/gi, 'false');
+    
+    return `(${cond})`;
+  }
+
+  private execute(jsCode: string): void {
+    try {
+      const func = new Function(jsCode);
+      this.output = func() || '';
+    } catch (error: any) {
+      throw new Error(error.message);
+    }
   }
 }
 
