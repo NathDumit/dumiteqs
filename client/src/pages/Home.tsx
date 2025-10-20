@@ -136,10 +136,10 @@ export default function Home() {
                 variant="outline"
                 size="sm"
                 onClick={handleReset}
-                className="border-green-600 hover:bg-green-700"
+                className="border-green-600 hover:bg-green-700 p-2"
+                title="Resetar"
               >
-                <RotateCcw className="w-4 h-4 mr-2" />
-                Resetar
+                <RotateCcw className="w-4 h-4" />
               </Button>
             </div>
           </div>

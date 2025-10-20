@@ -10,12 +10,13 @@ export function interpretPETEQS(code: string): InterpretResult {
   const variables: { [key: string]: any } = {};
 
   try {
-    const jsCode = translateToJavaScript(code, variables);
+    const jsCode = translateToJavaScript(code);
     translatedCode = jsCode;
 
     // Create a safer evaluation context
-    const result = new Function('variables', `
+    const result = new Function(`
       let output = '';
+      let variables = {};
       
       function IMPRIMALN(value) {
         output += String(value) + '\\n';
@@ -28,7 +29,7 @@ export function interpretPETEQS(code: string): InterpretResult {
       ${jsCode}
       
       return output;
-    `)(variables);
+    `)();
 
     output = result || '';
   } catch (error: any) {
@@ -40,15 +41,9 @@ export function interpretPETEQS(code: string): InterpretResult {
     let errorCode = '';
     
     for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      try {
-        if (line.includes('IMPRIMALN') || line.includes('IMPRIMA') || 
-            line.includes('LEIA') || line.includes('<-')) {
-          new Function(`let variables = {}; ${translateToJavaScript(line, {})}`);
-        }
-      } catch (e) {
-        errorLine = i + 1;
-        errorCode = line;
+      errorLine = i + 1;
+      errorCode = lines[i];
+      if (errorMessage.includes(errorCode) || errorMessage.includes(errorCode.split(' ')[0])) {
         break;
       }
     }
@@ -88,7 +83,7 @@ export function interpretPETEQS(code: string): InterpretResult {
   };
 }
 
-function translateToJavaScript(code: string, variables: { [key: string]: any }): string {
+function translateToJavaScript(code: string): string {
   let jsCode = '';
   const lines = code.split('\n').map(line => line.trim()).filter(line => line.length > 0);
   let i = 0;
@@ -109,19 +104,17 @@ function translateToJavaScript(code: string, variables: { [key: string]: any }):
     // Variable assignment
     else if (line.includes('<-')) {
       const [varName, expression] = line.split('<-').map(s => s.trim());
-      const varKey = varName.split('[')[0];
-      variables[varKey] = null;
       
       if (varName.includes('[')) {
         // Array assignment
         const arrayMatch = varName.match(/(\w+)\[(.+)\]/);
         if (arrayMatch) {
           const [, arrayName, index] = arrayMatch;
-          jsCode += `if (!${arrayName}) ${arrayName} = {};\n`;
-          jsCode += `${arrayName}[${parseExpression(index)}] = ${parseExpression(expression)};\n`;
+          jsCode += `if (!variables.${arrayName}) variables.${arrayName} = {};\n`;
+          jsCode += `variables.${arrayName}[${parseExpression(index)}] = ${parseExpression(expression)};\n`;
         }
       } else {
-        jsCode += `${varName} = ${parseExpression(expression)};\n`;
+        jsCode += `variables.${varName} = ${parseExpression(expression)};\n`;
       }
     }
     // PARA loop
@@ -139,7 +132,7 @@ function translateToJavaScript(code: string, variables: { [key: string]: any }):
           if (loopLine.match(/^PARA\s+/i)) loopDepth++;
           if (loopLine.match(/^FIM\s+PARA/i)) loopDepth--;
           if (loopDepth > 0) {
-            jsCode += translateLineToJS(loopLine) + '\n';
+            jsCode += translateLoopLine(loopLine) + '\n';
           }
           j++;
         }
@@ -249,6 +242,52 @@ function translateToJavaScript(code: string, variables: { [key: string]: any }):
   return jsCode;
 }
 
+function translateLoopLine(line: string): string {
+  // IMPRIMALN
+  if (line.match(/^IMPRIMALN\s+/i)) {
+    const content = line.replace(/^IMPRIMALN\s+/i, '').trim();
+    return `IMPRIMALN(${parseExpression(content)});`;
+  }
+  // IMPRIMA
+  if (line.match(/^IMPRIMA\s+/i)) {
+    const content = line.replace(/^IMPRIMA\s+/i, '').trim();
+    return `IMPRIMA(${parseExpression(content)});`;
+  }
+  // Variable assignment
+  if (line.includes('<-')) {
+    const [varName, expression] = line.split('<-').map(s => s.trim());
+    if (varName.includes('[')) {
+      const arrayMatch = varName.match(/(\w+)\[(.+)\]/);
+      if (arrayMatch) {
+        const [, arrayName, index] = arrayMatch;
+        return `if (!variables.${arrayName}) variables.${arrayName} = {}; variables.${arrayName}[${parseExpression(index)}] = ${parseExpression(expression)};`;
+      }
+    }
+    return `variables.${varName} = ${parseExpression(expression)};`;
+  }
+  // PRÓXIMO
+  if (line.match(/^PRÓXIMO\s+/i)) {
+    const nextMatch = line.match(/^PRÓXIMO\s+(\w+)/i);
+    if (nextMatch) {
+      return `${nextMatch[1]}++;`;
+    }
+  }
+  // SE/SENÃO
+  if (line.match(/^SE\s+/i)) {
+    const seMatch = line.match(/^SE\s+(.+?)\s+ENTÃO/i);
+    if (seMatch) {
+      return `if (${parseCondition(seMatch[1])}) {`;
+    }
+  }
+  if (line.match(/^SENÃO/i)) {
+    return '} else {';
+  }
+  if (line.match(/^FIM\s+SE/i)) {
+    return '}';
+  }
+  return '';
+}
+
 function translateLineToJS(line: string): string {
   // IMPRIMALN
   if (line.match(/^IMPRIMALN\s+/i)) {
@@ -267,10 +306,10 @@ function translateLineToJS(line: string): string {
       const arrayMatch = varName.match(/(\w+)\[(.+)\]/);
       if (arrayMatch) {
         const [, arrayName, index] = arrayMatch;
-        return `if (!${arrayName}) ${arrayName} = {}; ${arrayName}[${parseExpression(index)}] = ${parseExpression(expression)};`;
+        return `if (!variables.${arrayName}) variables.${arrayName} = {}; variables.${arrayName}[${parseExpression(index)}] = ${parseExpression(expression)};`;
       }
     }
-    return `${varName} = ${parseExpression(expression)};`;
+    return `variables.${varName} = ${parseExpression(expression)};`;
   }
   // PRÓXIMO
   if (line.match(/^PRÓXIMO\s+/i)) {
@@ -301,6 +340,19 @@ function parseExpression(expr: string): string {
   expr = expr.replace(/\bMOD\b/gi, '%');
   expr = expr.replace(/\bDIV\b/gi, 'Math.floor');
   
+  // Replace variable references with variables.varName for arrays
+  expr = expr.replace(/(\w+)\[/g, 'variables.$1[');
+  
+  // Replace simple variable references
+  expr = expr.replace(/\b([a-zA-Z_]\w*)\b(?!\[)/g, (match, varName) => {
+    // Don't replace reserved words or functions
+    const reserved = ['Math', 'String', 'Number', 'Boolean', 'Array', 'Object', 'Date', 'RegExp', 'Error', 'undefined', 'null', 'true', 'false', 'NaN', 'Infinity'];
+    if (reserved.includes(varName)) {
+      return match;
+    }
+    return `variables.${varName}`;
+  });
+  
   // Handle function calls like LEIA
   if (expr.match(/^LEIA\s*\(/i)) {
     return `prompt('Digite um valor:')`;
@@ -311,6 +363,18 @@ function parseExpression(expr: string): string {
 
 function parseCondition(condition: string): string {
   condition = condition.trim();
+  
+  // Replace variable references with variables.varName
+  condition = condition.replace(/\b([a-zA-Z_]\w*)\b(?!\[)/g, (match, varName) => {
+    const reserved = ['Math', 'String', 'Number', 'Boolean', 'Array', 'Object', 'Date', 'RegExp', 'Error', 'undefined', 'null', 'true', 'false', 'NaN', 'Infinity'];
+    if (reserved.includes(varName)) {
+      return match;
+    }
+    return `variables.${varName}`;
+  });
+  
+  // Replace array references
+  condition = condition.replace(/(\w+)\[/g, 'variables.$1[');
   
   // Replace PETEQS operators with JavaScript operators (order matters!)
   // Do <= and >= first to avoid replacing them with < and >
