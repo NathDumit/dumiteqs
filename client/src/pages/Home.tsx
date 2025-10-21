@@ -419,9 +419,10 @@ export default function Home() {
               <div>
                 <h3 className="font-semibold text-white mb-3">Operadores Lógicos</h3>
                 <ul className="space-y-2 font-mono text-xs">
-                  <li><span className="text-green-300">=</span> Igual</li>
+                  <li><span className="text-green-300">= ou ==</span> Igual</li>
                   <li><span className="text-green-300">&lt;&gt;</span> Diferente</li>
                   <li><span className="text-green-300">&lt;, &gt;, &lt;=, &gt;=</span> Comparação</li>
+                  <li><span className="text-green-300">MOD ou %</span> Resto da divisão</li>
                 </ul>
               </div>
             </div>
