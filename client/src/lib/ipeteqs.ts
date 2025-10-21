@@ -299,14 +299,18 @@ if (pq_para_end_${varname} >= ${start}) {
         }
         
         // Processar linhas dentro do loop
-        for (let i = lineIndex + 1; i < endIndex; i++) {
+        let i = lineIndex + 1;
+        while (i < endIndex) {
           const innerLine = allLines[i].trim();
           if (innerLine && !innerLine.startsWith('//')) {
             const processed = this.processLine(innerLine, allLines, i);
             if (processed.code) {
               loopCode += '    ' + processed.code + '\n';
             }
+            // Pular linhas que foram processadas como parte de blocos aninhados
+            i += processed.skipLines;
           }
+          i++;
         }
         
         loopCode += `
@@ -321,14 +325,18 @@ if (pq_para_end_${varname} >= ${start}) {
 `;
         
         // Processar linhas dentro do loop (decremento)
-        for (let i = lineIndex + 1; i < endIndex; i++) {
-          const innerLine = allLines[i].trim();
+        let j = lineIndex + 1;
+        while (j < endIndex) {
+          const innerLine = allLines[j].trim();
           if (innerLine && !innerLine.startsWith('//')) {
-            const processed = this.processLine(innerLine, allLines, i);
+            const processed = this.processLine(innerLine, allLines, j);
             if (processed.code) {
               loopCode += '    ' + processed.code + '\n';
             }
+            // Pular linhas que foram processadas como parte de blocos aninhados
+            j += processed.skipLines;
           }
+          j++;
         }
         
         loopCode += `
@@ -425,14 +433,23 @@ for (let pq_repita_i = 0; pq_repita_i < ${times}; pq_repita_i++) {
         // Encontrar FIM SE
         let endIndex = lineIndex + 1;
         let senaoIndex = -1;
+        let depth = 0;
         
         while (endIndex < allLines.length) {
-          if (allLines[endIndex].match(/^senão|^senao/i)) {
+          const currentLine = allLines[endIndex].trim().toLowerCase();
+          
+          // Rastrear profundidade de blocos aninhados
+          if (currentLine.match(/^se\s+/i)) {
+            depth++;
+          } else if (currentLine.match(/^fim\s+se/i)) {
+            if (depth === 0) {
+              break;
+            }
+            depth--;
+          } else if (currentLine.match(/^senão|^senao/i) && depth === 0) {
             senaoIndex = endIndex;
           }
-          if (allLines[endIndex].match(/^fim\s+se/i)) {
-            break;
-          }
+          
           endIndex++;
         }
         
