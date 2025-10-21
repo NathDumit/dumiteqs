@@ -371,10 +371,15 @@
             
             executarPara(lines, inicio) {
                 const linha = lines[inicio];
-                // Match PARA with various arrow styles
-                const match = linha.match(/PARA\s+(\w+)\s*(?:←|<-|=)\s*(-?\d+)\s+ATÉ\s+(-?\d+)\s+FAÇA/i);
+                // Match PARA with various arrow styles - use word boundaries for ATÉ
+                const match = linha.match(/PARA\s+(\w+)\s*(?:←|<-|=)\s*(-?\d+)\s+ATÉ\s+(-?\d+)\b/i);
                 
                 if (!match) throw new Error('Sintaxe PARA inválida na linha ' + (inicio + 1) + '. Use: PARA variavel ← inicio ATÉ fim FAÇA');
+                
+                // Verify that FAÇA is present
+                if (!linha.toUpperCase().includes('FAÇA')) {
+                    throw new Error('FAÇA não encontrado na linha ' + (inicio + 1));
+                }
                 
                 const [, varName, inicio_val, fim_val] = match;
                 let fimPara = inicio + 1;
