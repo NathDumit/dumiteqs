@@ -371,9 +371,10 @@
             
             executarPara(lines, inicio) {
                 const linha = lines[inicio];
-                const match = linha.match(/PARA\s+(\w+)\s*(?:←|<-)\s*(-?\d+)\s+ATÉ\s+(-?\d+)\s+FAÇA/i);
+                // Match PARA with various arrow styles
+                const match = linha.match(/PARA\s+(\w+)\s*(?:←|<-|=)\s*(-?\d+)\s+ATÉ\s+(-?\d+)\s+FAÇA/i);
                 
-                if (!match) throw new Error('Sintaxe PARA inválida na linha ' + (inicio + 1));
+                if (!match) throw new Error('Sintaxe PARA inválida na linha ' + (inicio + 1) + '. Use: PARA variavel ← inicio ATÉ fim FAÇA');
                 
                 const [, varName, inicio_val, fim_val] = match;
                 let fimPara = inicio + 1;
@@ -400,7 +401,7 @@
                 const linha = lines[inicio];
                 const match = linha.match(/SE\s+(.*?)\s+ENTÃO/i);
                 
-                if (!match) throw new Error('Sintaxe SE inválida na linha ' + (inicio + 1));
+                if (!match) throw new Error('Sintaxe SE inválida na linha ' + (inicio + 1) + '. Use: SE condição ENTÃO');
                 
                 const condicao = match[1];
                 let fimSe = inicio + 1;
@@ -430,7 +431,7 @@
                 const linha = lines[inicio];
                 const match = linha.match(/ENQUANTO\s+(.*?)\s+FAÇA/i);
                 
-                if (!match) throw new Error('Sintaxe ENQUANTO inválida na linha ' + (inicio + 1));
+                if (!match) throw new Error('Sintaxe ENQUANTO inválida na linha ' + (inicio + 1) + '. Use: ENQUANTO condição FAÇA');
                 
                 const condicao = match[1];
                 let fimEnquanto = inicio + 1;
@@ -459,7 +460,7 @@
                 const linha = lines[inicio];
                 const match = linha.match(/REPITA\s+(-?\d+)\s+VEZES/i);
                 
-                if (!match) throw new Error('Sintaxe REPITA inválida na linha ' + (inicio + 1));
+                if (!match) throw new Error('Sintaxe REPITA inválida na linha ' + (inicio + 1) + '. Use: REPITA n VEZES');
                 
                 const vezes = parseInt(match[1]);
                 let fimRepita = inicio + 1;
