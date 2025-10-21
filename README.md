@@ -292,7 +292,7 @@ A aplicação é totalmente responsiva e funciona em:
 ### Publicar no Manus
 
 1. Clique no botão **"Publish"** na interface do Manus
-2. Configure o domínio como `dumiteqs.manus.space`
+2. Configure o domínio como `peteqsint-plrqt65m.manus.space`
 3. Clique em **"Deploy"**
 
 ### Publicar em Outro Host
@@ -339,7 +339,7 @@ Se encontrar problemas ou tiver dúvidas:
 
 ## 🔗 Links Úteis
 
-- **Site Oficial**: https://dumiteqs.manus.space (quando publicado)
+- **Site Oficial**: https://peteqsint-plrqt65m.manus.space
 - **Repositório**: https://github.com/NathDumit/dumiteqs
 - **Issues**: https://github.com/NathDumit/dumiteqs/issues
 - **Discussões**: https://github.com/NathDumit/dumiteqs/discussions
