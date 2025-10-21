@@ -62,8 +62,6 @@ const PeteqsHelper = {
         // Remover anotacoes de tipo
         line = line.replace(/\s*saidas\s*:\s*/gi, '');
         line = line.replace(/\s*entradas\s*:\s*/gi, '');
-        // Remover notação de array V[] -> V
-        line = line.replace(/\[\]/g, '');
         return line.trim();
       })
       .filter(line => line && !line.startsWith('//'));
