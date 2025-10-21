@@ -1,0 +1,34 @@
+title: DUMITEQS - Interpretador de PETEQS
+description: Um interpretador web interativo para PETEQS, uma pseudolinguagem educacional em português
+author: Willian
+email: contact@dumiteqs.com
+url: https://nathdumit.github.io/dumiteqs
+baseurl: /dumiteqs
+theme: jekyll-theme-minimal
+
+# Configurações de compilação
+markdown: kramdown
+plugins:
+  - jekyll-seo-tag
+  - jekyll-sitemap
+
+# Configurações de SEO
+google_analytics: 
+twitter:
+  username: 
+
+# Configurações de navegação
+nav:
+  - title: Home
+    url: /
+  - title: Documentação
+    url: /docs
+  - title: Exemplos
+    url: /exemplos
+  - title: GitHub
+    url: https://github.com/NathDumit/dumiteqs
+
+# Configurações de tema
+logo: /assets/logo.png
+show_downloads: true
+
