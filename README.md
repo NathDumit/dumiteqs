@@ -320,11 +320,12 @@ Este projeto está licenciado sob a Licença MIT - veja o arquivo [LICENSE](LICE
 
 ## 👨‍💻 Autor
 
-**Willian** - Desenvolvedor do DUMITEQS
+**NathDumit** - Desenvolvedora do Dumiteqs
 
 ## 🙏 Agradecimentos
 
-- Comunidade educacional brasileira por inspirar este projeto
+**LeonNasc** - Desenvolvedor do ipeteqsJS
+**Turma de Ciência da Computação da UFF** - Por todos os testes
 - PETEQS original por fornecer a base da pseudolinguagem
 - Todos os contribuidores e usuários
 
