@@ -48,15 +48,21 @@ ENQUANTO i <= 5 FAÇA
 FIM ENQUANTO`,
 
   operadores: `a <- 10
-	b <- 5
-	IMPRIMALN 'Soma: '
-	IMPRIMA a + b
-	IMPRIMALN ''
-	IMPRIMALN 'Subtração: '
-	IMPRIMA a - b
-	IMPRIMALN ''
-	IMPRIMALN 'Multiplicação: '
-	IMPRIMA a * b`,
+		b <- 5
+		IMPRIMALN 'Soma: '
+		IMPRIMA a + b
+		IMPRIMALN ''
+		IMPRIMALN 'Subtração: '
+		IMPRIMA a - b
+		IMPRIMALN ''
+		IMPRIMALN 'Multiplicação: '
+		IMPRIMA a * b`,
+
+  pares: `PARA i <- 1 ATÉ 5 FAÇA
+    SE i MOD 2 = 0 ENTÃO
+      IMPRIMALN i
+    FIM SE
+  FIM PARA`,
 
   bubbleSort: `PROCEDIMENTO bubbleSort(vetor, n)
     PARA i <- 1 ATÉ n - 1 FAÇA
@@ -296,6 +302,7 @@ export default function Home() {
                       {key === 'repita' && 'Repita'}
                       {key === 'enquanto' && 'Enquanto'}
                       {key === 'operadores' && 'Operadores'}
+                      {key === 'pares' && 'Números Pares'}
                       {key === 'error' && 'Com Erro'}
                     </Button>
                   ))}
@@ -394,10 +401,10 @@ export default function Home() {
               <div>
                 <h3 className="font-semibold text-white mb-3">Operações Básicas</h3>
                 <ul className="space-y-2 font-mono text-xs">
-                  <li><span className="text-green-300">a &lt;- 10</span> Atribuição</li>
+                  <li><span className="text-green-300">a &lt;- 10</span> Atribuição (guardar valor)</li>
                   <li><span className="text-green-300">a + b, a - b</span> Soma e Subtração</li>
                   <li><span className="text-green-300">a * b, a / b</span> Multiplicação e Divisão</li>
-                  <li><span className="text-green-300">a MOD b</span> Módulo</li>
+                  <li><span className="text-green-300">a MOD b ou a % b</span> Resto da divisão</li>
                 </ul>
               </div>
               <div>
@@ -417,12 +424,12 @@ export default function Home() {
                 </ul>
               </div>
               <div>
-                <h3 className="font-semibold text-white mb-3">Operadores Lógicos</h3>
+                <h3 className="font-semibold text-white mb-3">Operadores de Comparação</h3>
                 <ul className="space-y-2 font-mono text-xs">
-                  <li><span className="text-green-300">= ou ==</span> Igual</li>
+                  <li><span className="text-green-300">= ou ==</span> Igual (comparação, não atribuição)</li>
                   <li><span className="text-green-300">&lt;&gt;</span> Diferente</li>
                   <li><span className="text-green-300">&lt;, &gt;, &lt;=, &gt;=</span> Comparação</li>
-                  <li><span className="text-green-300">MOD ou %</span> Resto da divisão</li>
+                  <li><span className="text-green-300">e, ou, não</span> Operadores lógicos</li>
                 </ul>
               </div>
             </div>
@@ -535,7 +542,22 @@ export default function Home() {
                 <p className="text-xs">Se o número for maior que 5, imprime "Número é grande!", caso contrário imprime "Número é pequeno!"</p>
               </div>
 
-              {/* Seção 6: Dicas Práticas */}
+              {/* Seção 5.5: Exemplo Prático - Números Pares */}
+              <div>
+                <h3 className="font-semibold text-white text-base mb-2">6️⃣ Exemplo Prático: Filtrando Números Pares</h3>
+                <p className="mb-3">Aqui está um exemplo que combina PARA com SE para imprimir apenas números pares:</p>
+                <p className="text-green-300 bg-green-950 p-2 rounded font-mono text-xs mb-2">
+                  PARA i &lt;- 1 ATÉ 5 FAÇA<br/>
+                  &nbsp;&nbsp;SE i MOD 2 = 0 ENTÃO<br/>
+                  &nbsp;&nbsp;&nbsp;&nbsp;IMPRIMALN i<br/>
+                  &nbsp;&nbsp;FIM SE<br/>
+                  FIM PARA
+                </p>
+                <p className="text-xs">Este código imprime apenas os números pares (2 e 4) porque usa o operador <strong>MOD</strong> para verificar se o resto da divisão por 2 é 0.</p>
+                <p className="text-xs mt-2"><strong>Saída:</strong> 2 e 4</p>
+              </div>
+
+              {/* Seção 7: Dicas Práticas */}
               <div>
                 <h3 className="font-semibold text-white text-base mb-2">💡 Dicas Práticas</h3>
                 <ul className="space-y-2 text-xs">
@@ -547,7 +569,7 @@ export default function Home() {
                 </ul>
               </div>
 
-              {/* Seção 7: Próximos Passos */}
+              {/* Seção 8: Próximos Passos */}
               <div>
                 <h3 className="font-semibold text-white text-base mb-2">🚀 Próximos Passos</h3>
                 <p className="mb-3">Agora que você conhece o básico:</p>
