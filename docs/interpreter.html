@@ -27,10 +27,17 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
         }
         
         .logo {
-            font-size: 1.5em;
+            font-size: 1.3em;
             font-weight: bold;
             color: #10b981;
         }
@@ -41,36 +48,40 @@
         
         .nav-links {
             display: flex;
-            gap: 20px;
+            gap: 15px;
         }
         
         .nav-links a {
             color: #10b981;
             text-decoration: none;
-            font-size: 0.95em;
+            font-size: 0.9em;
             transition: color 0.3s;
+            padding: 5px 10px;
+            border-radius: 4px;
         }
         
         .nav-links a:hover {
+            background: rgba(16, 185, 129, 0.2);
             color: #06b6d4;
         }
         
         .buttons {
             display: flex;
             gap: 10px;
+            flex-wrap: wrap;
         }
         
         button {
-            padding: 8px 16px;
+            padding: 8px 14px;
             border: none;
             border-radius: 4px;
             cursor: pointer;
-            font-size: 0.95em;
+            font-size: 0.85em;
             font-weight: 600;
             transition: all 0.3s;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 5px;
         }
         
         .btn-execute {
@@ -80,6 +91,7 @@
         
         .btn-execute:hover {
             background: #7c3aed;
+            transform: translateY(-1px);
         }
         
         .btn-translate {
@@ -89,6 +101,7 @@
         
         .btn-translate:hover {
             background: #0891b2;
+            transform: translateY(-1px);
         }
         
         .btn-clear {
@@ -98,6 +111,7 @@
         
         .btn-clear:hover {
             background: #dc2626;
+            transform: translateY(-1px);
         }
         
         .container {
@@ -124,7 +138,7 @@
             border-bottom: 1px solid #444;
             font-weight: 600;
             color: #10b981;
-            font-size: 0.95em;
+            font-size: 0.9em;
         }
         
         textarea {
@@ -134,9 +148,10 @@
             border: none;
             padding: 15px;
             font-family: 'Courier New', monospace;
-            font-size: 14px;
+            font-size: 13px;
             resize: none;
             outline: none;
+            line-height: 1.5;
         }
         
         textarea::placeholder {
@@ -150,11 +165,12 @@
             border: none;
             padding: 15px;
             font-family: 'Courier New', monospace;
-            font-size: 14px;
+            font-size: 13px;
             resize: none;
             overflow-y: auto;
             white-space: pre-wrap;
             word-wrap: break-word;
+            line-height: 1.5;
         }
         
         .error {
@@ -184,24 +200,36 @@
             background: #666;
         }
         
-        @media (max-width: 768px) {
+        @media (max-width: 1024px) {
             .container {
                 flex-direction: column;
             }
             
-            .nav-links {
+            header {
                 flex-direction: column;
                 gap: 10px;
+            }
+            
+            .header-left {
+                width: 100%;
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .buttons {
+                width: 100%;
             }
         }
     </style>
 </head>
 <body>
     <header>
-        <div class="logo">:: DUMITEQS</div>
-        <div class="nav-links">
-            <a href="index.html">Documentação</a>
-            <a href="https://github.com/NathDumit/dumiteqs" target="_blank">Código fonte</a>
+        <div class="header-left">
+            <div class="logo">:: DUMITEQS</div>
+            <div class="nav-links">
+                <a href="https://github.com/NathDumit/dumiteqs" target="_blank">📚 Documentação</a>
+                <a href="https://github.com/NathDumit/dumiteqs" target="_blank">💻 Código fonte</a>
+            </div>
         </div>
         <div class="buttons">
             <button class="btn-execute" onclick="executarCodigo()">▶ Executar</button>
@@ -223,13 +251,15 @@
     </div>
     
     <script>
-        // Interpretador PETEQS simplificado
+        // Interpretador PETEQS completo
         class PETEQSInterpreter {
             constructor() {
                 this.variables = {};
                 this.functions = {};
                 this.procedures = {};
                 this.output = '';
+                this.executionLimit = 100000;
+                this.executionCount = 0;
             }
             
             interpret(code) {
@@ -237,9 +267,18 @@
                 this.variables = {};
                 this.functions = {};
                 this.procedures = {};
+                this.executionCount = 0;
                 
                 try {
-                    const lines = code.split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('//'));
+                    // Remove comments
+                    const lines = code.split('\n')
+                        .map(l => {
+                            const commentIndex = l.indexOf('//');
+                            return commentIndex >= 0 ? l.substring(0, commentIndex) : l;
+                        })
+                        .map(l => l.trim())
+                        .filter(l => l.length > 0);
+                    
                     this.executarLinhas(lines, 0, lines.length);
                     return { output: this.output || '(Nenhuma saída)', error: null };
                 } catch (err) {
@@ -247,9 +286,17 @@
                 }
             }
             
+            checkExecutionLimit() {
+                this.executionCount++;
+                if (this.executionCount > this.executionLimit) {
+                    throw new Error('Limite de execução excedido (possível loop infinito)');
+                }
+            }
+            
             executarLinhas(lines, inicio, fim) {
                 let i = inicio;
                 while (i < fim) {
+                    this.checkExecutionLimit();
                     const linha = lines[i];
                     
                     if (linha.toUpperCase().startsWith('IMPRIMALN')) {
@@ -280,12 +327,14 @@
             
             atribuir(linha) {
                 const [varName, valor] = linha.split(/←|<-/).map(s => s.trim());
+                if (!varName || !valor) throw new Error('Sintaxe de atribuição inválida');
                 this.variables[varName] = this.avaliar(valor);
             }
             
             extrairValor(expr) {
                 expr = expr.trim();
-                if (expr.startsWith("'") && expr.endsWith("'")) {
+                if ((expr.startsWith("'") && expr.endsWith("'")) || 
+                    (expr.startsWith('"') && expr.endsWith('"'))) {
                     return expr.slice(1, -1);
                 }
                 return String(this.avaliar(expr));
@@ -296,7 +345,8 @@
                 
                 // Substituir variáveis
                 for (let [varName, valor] of Object.entries(this.variables)) {
-                    expr = expr.replace(new RegExp('\\b' + varName + '\\b', 'g'), valor);
+                    const regex = new RegExp('\\b' + varName + '\\b', 'g');
+                    expr = expr.replace(regex, JSON.stringify(valor));
                 }
                 
                 // Operadores lógicos
@@ -305,8 +355,9 @@
                 expr = expr.replace(/\bnão\b/gi, '!');
                 
                 // Operadores de comparação
-                expr = expr.replace(/\s*=\s*/g, ' == ');
-                expr = expr.replace(/\s*<>\s*/g, ' != ');
+                expr = expr.replace(/\s*==\s*/g, ' === ');
+                expr = expr.replace(/\s*=\s*/g, ' === ');
+                expr = expr.replace(/\s*<>\s*/g, ' !== ');
                 
                 // MOD
                 expr = expr.replace(/\bMOD\b/gi, '%');
@@ -314,15 +365,15 @@
                 try {
                     return eval(expr);
                 } catch {
-                    return expr;
+                    throw new Error(`Erro ao avaliar: ${expr}`);
                 }
             }
             
             executarPara(lines, inicio) {
                 const linha = lines[inicio];
-                const match = linha.match(/PARA\s+(\w+)\s*←\s*(\d+)\s+ATÉ\s+(\d+)/i);
+                const match = linha.match(/PARA\s+(\w+)\s*(?:←|<-)\s*(-?\d+)\s+ATÉ\s+(-?\d+)\s+FAÇA/i);
                 
-                if (!match) throw new Error('Sintaxe PARA inválida');
+                if (!match) throw new Error('Sintaxe PARA inválida na linha ' + (inicio + 1));
                 
                 const [, varName, inicio_val, fim_val] = match;
                 let fimPara = inicio + 1;
@@ -334,7 +385,10 @@
                     }
                 }
                 
+                if (fimPara === inicio + 1) throw new Error('FIM PARA não encontrado');
+                
                 for (let i = parseInt(inicio_val); i <= parseInt(fim_val); i++) {
+                    this.checkExecutionLimit();
                     this.variables[varName] = i;
                     this.executarLinhas(lines, inicio + 1, fimPara);
                 }
@@ -346,7 +400,7 @@
                 const linha = lines[inicio];
                 const match = linha.match(/SE\s+(.*?)\s+ENTÃO/i);
                 
-                if (!match) throw new Error('Sintaxe SE inválida');
+                if (!match) throw new Error('Sintaxe SE inválida na linha ' + (inicio + 1));
                 
                 const condicao = match[1];
                 let fimSe = inicio + 1;
@@ -359,6 +413,8 @@
                         break;
                     }
                 }
+                
+                if (fimSe === inicio + 1) throw new Error('FIM SE não encontrado');
                 
                 if (this.avaliar(condicao)) {
                     const fim = senao >= 0 ? senao : fimSe;
@@ -374,7 +430,7 @@
                 const linha = lines[inicio];
                 const match = linha.match(/ENQUANTO\s+(.*?)\s+FAÇA/i);
                 
-                if (!match) throw new Error('Sintaxe ENQUANTO inválida');
+                if (!match) throw new Error('Sintaxe ENQUANTO inválida na linha ' + (inicio + 1));
                 
                 const condicao = match[1];
                 let fimEnquanto = inicio + 1;
@@ -386,7 +442,13 @@
                     }
                 }
                 
+                if (fimEnquanto === inicio + 1) throw new Error('FIM ENQUANTO não encontrado');
+                
+                let iterations = 0;
                 while (this.avaliar(condicao)) {
+                    this.checkExecutionLimit();
+                    iterations++;
+                    if (iterations > 10000) throw new Error('Loop infinito detectado');
                     this.executarLinhas(lines, inicio + 1, fimEnquanto);
                 }
                 
@@ -395,9 +457,9 @@
             
             executarRepita(lines, inicio) {
                 const linha = lines[inicio];
-                const match = linha.match(/REPITA\s+(\d+)\s+VEZES/i);
+                const match = linha.match(/REPITA\s+(-?\d+)\s+VEZES/i);
                 
-                if (!match) throw new Error('Sintaxe REPITA inválida');
+                if (!match) throw new Error('Sintaxe REPITA inválida na linha ' + (inicio + 1));
                 
                 const vezes = parseInt(match[1]);
                 let fimRepita = inicio + 1;
@@ -409,7 +471,10 @@
                     }
                 }
                 
+                if (fimRepita === inicio + 1) throw new Error('FIM REPITA não encontrado');
+                
                 for (let j = 0; j < vezes; j++) {
+                    this.checkExecutionLimit();
                     this.executarLinhas(lines, inicio + 1, fimRepita);
                 }
                 
@@ -426,9 +491,9 @@
             const resultado = interpreter.interpret(code);
             
             if (resultado.error) {
-                output.innerHTML = `<span class="error">Erro: ${resultado.error}</span>`;
+                output.innerHTML = `<span class="error">❌ Erro: ${resultado.error}</span>`;
             } else {
-                output.textContent = resultado.output;
+                output.innerHTML = `<span class="success">${resultado.output}</span>`;
             }
         }
         
@@ -444,7 +509,7 @@
             traduzido = traduzido.replace(/\bnão\b/gi, '!');
             traduzido = traduzido.replace(/IMPRIMALN/gi, 'console.log');
             traduzido = traduzido.replace(/IMPRIMA/gi, 'process.stdout.write');
-            traduzido = traduzido.replace(/PARA\s+(\w+)\s*=\s*(\d+)\s+ATÉ\s+(\d+)\s+FAÇA/gi, 'for ($1 = $2; $1 <= $3; $1++)');
+            traduzido = traduzido.replace(/PARA\s+(\w+)\s*=\s*(-?\d+)\s+ATÉ\s+(-?\d+)\s+FAÇA/gi, 'for ($1 = $2; $1 <= $3; $1++)');
             traduzido = traduzido.replace(/ENQUANTO\s+(.*?)\s+FAÇA/gi, 'while ($1)');
             traduzido = traduzido.replace(/SE\s+(.*?)\s+ENTÃO/gi, 'if ($1)');
             traduzido = traduzido.replace(/SENÃO/gi, 'else');
@@ -455,7 +520,7 @@
         
         function limparCodigo() {
             document.getElementById('code').value = '';
-            document.getElementById('output').textContent = '';
+            document.getElementById('output').innerHTML = '';
         }
         
         // Executar ao pressionar Ctrl+Enter
@@ -463,6 +528,11 @@
             if (e.ctrlKey && e.key === 'Enter') {
                 executarCodigo();
             }
+        });
+        
+        // Executar código padrão ao carregar
+        window.addEventListener('load', function() {
+            executarCodigo();
         });
     </script>
 </body>
