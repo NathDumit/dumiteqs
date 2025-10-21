@@ -298,25 +298,33 @@
                 while (i < fim) {
                     this.checkExecutionLimit();
                     const linha = lines[i];
+                    const linhaUpper = linha.toUpperCase();
                     
-                    if (linha.toUpperCase().startsWith('IMPRIMALN')) {
+                    // Skip structural keywords
+                    if (linhaUpper === 'FIM PARA' || linhaUpper === 'FIM SE' || linhaUpper === 'FIM ENQUANTO' || 
+                        linhaUpper === 'FIM REPITA' || linhaUpper === 'SENAO') {
+                        i++;
+                        continue;
+                    }
+                    
+                    if (linhaUpper.startsWith('IMPRIMALN')) {
                         const valor = this.extrairValor(linha.substring(9));
                         this.output += valor + '\n';
-                    } else if (linha.toUpperCase().startsWith('IMPRIMA')) {
+                    } else if (linhaUpper.startsWith('IMPRIMA')) {
                         const valor = this.extrairValor(linha.substring(7));
                         this.output += valor;
                     } else if (linha.includes('←') || linha.includes('<-')) {
                         this.atribuir(linha);
-                    } else if (linha.toUpperCase().startsWith('PARA')) {
+                    } else if (linhaUpper.startsWith('PARA')) {
                         const resultado = this.executarPara(lines, i);
                         i = resultado.proximaLinha - 1;
-                    } else if (linha.toUpperCase().startsWith('SE')) {
+                    } else if (linhaUpper.startsWith('SE')) {
                         const resultado = this.executarSe(lines, i);
                         i = resultado.proximaLinha - 1;
-                    } else if (linha.toUpperCase().startsWith('ENQUANTO')) {
+                    } else if (linhaUpper.startsWith('ENQUANTO')) {
                         const resultado = this.executarEnquanto(lines, i);
                         i = resultado.proximaLinha - 1;
-                    } else if (linha.toUpperCase().startsWith('REPITA')) {
+                    } else if (linhaUpper.startsWith('REPITA')) {
                         const resultado = this.executarRepita(lines, i);
                         i = resultado.proximaLinha - 1;
                     }
