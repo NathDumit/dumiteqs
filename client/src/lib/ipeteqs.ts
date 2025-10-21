@@ -1,7 +1,6 @@
 /**
- * DUMITEQS - Interpretador PETEQS completo
- * Baseado no ipeteqsJS original de Leon de França Nascimento
- * Adaptado para TypeScript/React com suporte a PROCEDIMENTO e FUNCAO
+ * DUMITEQS - Interpretador PETEQS Melhorado
+ * Suporta: Funções, Procedimentos, Vetores, Operadores Lógicos, Funções Built-in
  */
 
 export interface InterpretResult {
@@ -31,7 +30,6 @@ class PETEQSInterpreter {
       this.output = '';
       this.target = { innerHTML: '' };
 
-      // Usar o núcleo de interpretação
       PeteqsHelper.execute(code, this.target);
       
       return { output: this.target.innerHTML.trimEnd() };
@@ -44,7 +42,6 @@ class PETEQSInterpreter {
   }
 }
 
-// Helper do PETEQS
 const PeteqsHelper = {
   purge: function (): void {
     // Limpar estado se necessário
@@ -65,6 +62,8 @@ const PeteqsHelper = {
         // Remover anotacoes de tipo
         line = line.replace(/\s*saidas\s*:\s*/gi, '');
         line = line.replace(/\s*entradas\s*:\s*/gi, '');
+        // Remover notação de array V[] -> V
+        line = line.replace(/\[\]/g, '');
         return line.trim();
       })
       .filter(line => line && !line.startsWith('//'));
@@ -76,9 +75,13 @@ const PeteqsHelper = {
     expr = expr.trim();
     
     // Se for uma string entre aspas, manter como está
-    if (expr.match(/^['"`]/)) {
+    if (expr.match(/^['"\`]/)) {
       return expr;
     }
+    
+    // Converter VERDADEIRO/FALSO
+    expr = expr.replace(/\bVERDADEIRO\b/gi, 'true');
+    expr = expr.replace(/\bFALSO\b/gi, 'false');
     
     // Converter operadores PETEQS para JavaScript
     expr = expr.replace(/\s+e\s+/gi, ' && ');
@@ -89,14 +92,18 @@ const PeteqsHelper = {
     expr = expr.replace(/\s+<>\s+/g, ' !== ');
     expr = expr.replace(/\bMOD\b/gi, '%');
     expr = expr.replace(/\bmod\b/gi, '%');
-    expr = expr.replace(/\babs\(/gi, 'Math.abs(');
+    
+    // Converter funções built-in
+    expr = expr.replace(/\btamanho\s*\(/gi, 'PQ_tamanho(');
+    expr = expr.replace(/\babs\s*\(/gi, 'Math.abs(');
+    expr = expr.replace(/\bmax\s*\(/gi, 'Math.max(');
+    expr = expr.replace(/\bmin\s*\(/gi, 'Math.min(');
+    expr = expr.replace(/\baleatorio\s*\(/gi, 'PQ_aleatorio(');
     expr = expr.replace(/\bsqrt\(/gi, 'Math.sqrt(');
     expr = expr.replace(/\bpow\(/gi, 'Math.pow(');
     expr = expr.replace(/\bfloor\(/gi, 'Math.floor(');
     expr = expr.replace(/\bceil\(/gi, 'Math.ceil(');
     expr = expr.replace(/\bround\(/gi, 'Math.round(');
-    expr = expr.replace(/\bmax\(/gi, 'Math.max(');
-    expr = expr.replace(/\bmin\(/gi, 'Math.min(');
     
     return expr;
   },
@@ -115,7 +122,7 @@ const PeteqsHelper = {
     while (i < lines.length) {
       const line = lines[i];
       
-      // Detectar PROCEDIMENTO (ou PROCEDIMENTO)
+      // Detectar PROCEDIMENTO
       if (line.match(/^(?:procedimento|procedimento)\s+/i)) {
         const match = line.match(/^(?:procedimento|procedimento)\s+(\w+)\s*\(\s*([^)]*)\s*\)/i);
         if (match) {
@@ -132,7 +139,7 @@ const PeteqsHelper = {
           procedures[procName] = { params, lines: procLines };
         }
       }
-      // Detectar FUNCAO (ou FUNCAO)
+      // Detectar FUNCAO
       else if (line.match(/^(?:funcao|funcao)\s+/i)) {
         const match = line.match(/^(?:funcao|funcao)\s+(\w+)\s*\(\s*([^)]*)\s*\)/i);
         if (match) {
@@ -171,6 +178,17 @@ const PeteqsHelper = {
         t.innerHTML += arg;
       }
     }
+  }
+  
+  function PQ_tamanho(arr) {
+    if (Array.isArray(arr)) {
+      return arr.length;
+    }
+    return 0;
+  }
+  
+  function PQ_aleatorio(n) {
+    return Math.floor(Math.random() * n) + 1;
   }
   
 `;
@@ -230,9 +248,6 @@ const PeteqsHelper = {
     }
   },
 
-  /**
-   * Processa uma linha de código PETEQS
-   */
   processLine: function (line: string, allLines: string[], lineIndex: number): { code: string; skipLines: number } {
     line = line.trim();
 
@@ -243,12 +258,10 @@ const PeteqsHelper = {
     // IMPRIMALN - imprime com quebra de linha
     if (line.match(/^imprimaln\s+/i)) {
       const expr = line.replace(/^imprimaln\s+/i, '').trim();
-      // Se tiver + para concatenação, tratar como uma única expressão
       if (expr.includes('+')) {
         const converted = this.convertExpression(expr);
         return { code: `PQ_print(target, ${converted}); PQ_print(target, '<br>');`, skipLines: 0 };
       }
-      // Parse os argumentos respeitando strings
       const args = this.parseImprimitArgs(expr);
       const jsArgs = args.map((arg) => this.convertExpression(arg));
       return { code: `PQ_print(target, ${jsArgs.join(', ')}); PQ_print(target, '<br>');`, skipLines: 0 };
@@ -257,7 +270,6 @@ const PeteqsHelper = {
     // IMPRIMA - imprime sem quebra de linha
     if (line.match(/^imprima\s+/i)) {
       const expr = line.replace(/^imprima\s+/i, '').trim();
-      // Se tiver + para concatenacao ou [ para array, tratar como uma unica expressao
       if (expr.includes('+') || expr.includes('[')) {
         const converted = this.convertExpression(expr);
         return { code: `PQ_print(target, ${converted});`, skipLines: 0 };
@@ -307,7 +319,6 @@ if (pq_para_end_${varname} >= ${start}) {
             if (processed.code) {
               loopCode += '    ' + processed.code + '\n';
             }
-            // Pular linhas que foram processadas como parte de blocos aninhados
             i += processed.skipLines;
           }
           i++;
@@ -333,7 +344,6 @@ if (pq_para_end_${varname} >= ${start}) {
             if (processed.code) {
               loopCode += '    ' + processed.code + '\n';
             }
-            // Pular linhas que foram processadas como parte de blocos aninhados
             j += processed.skipLines;
           }
           j++;
@@ -541,6 +551,12 @@ for (let pq_repita_i = 0; pq_repita_i < ${times}; pq_repita_i++) {
         return { code: `if (typeof ${arrayName} === 'undefined') { var ${arrayName} = []; } ${varPart} = ${converted};`, skipLines: 0 };
       }
       
+      // Verificar se eh inicializacao de array com valores [1, 2, 3]
+      if (exprPart.match(/^\[.*\]$/)) {
+        const converted = this.convertExpression(exprPart);
+        return { code: `var ${varPart} = ${converted};`, skipLines: 0 };
+      }
+      
       const converted = this.convertExpression(exprPart);
       return { code: `var ${varPart} = ${converted};`, skipLines: 0 };
     }
@@ -553,9 +569,6 @@ for (let pq_repita_i = 0; pq_repita_i < ${times}; pq_repita_i++) {
     return { code: '', skipLines: 0 };
   },
 
-  /**
-   * Parse argumentos de IMPRIMA/IMPRIMALN respeitando strings
-   */
   parseImprimitArgs: function (expr: string): string[] {
     const args: string[] = [];
     let current = '';
@@ -590,11 +603,9 @@ for (let pq_repita_i = 0; pq_repita_i < ${times}; pq_repita_i++) {
       args.push(current.trim());
     }
     
-    // Se não houver vírgulas, dividir por espaços respeitando strings
     if (args.length === 0) {
       args.push(expr);
     } else if (args.length === 1 && !expr.includes(',')) {
-      // Se for uma única string sem vírgulas, tentar dividir por espaços
       const parts: string[] = [];
       let part = '';
       let inStr = false;
@@ -632,4 +643,3 @@ for (let pq_repita_i = 0; pq_repita_i < ${times}; pq_repita_i++) {
     return args;
   }
 };
-
