@@ -313,8 +313,6 @@
                     } else if (linhaUpper.startsWith('IMPRIMA')) {
                         const valor = this.extrairValor(linha.substring(7));
                         this.output += valor;
-                    } else if (linha.includes('←') || linha.includes('<-')) {
-                        this.atribuir(linha);
                     } else if (linhaUpper.startsWith('PARA')) {
                         const resultado = this.executarPara(lines, i);
                         i = resultado.proximaLinha - 1;
@@ -327,6 +325,8 @@
                     } else if (linhaUpper.startsWith('REPITA')) {
                         const resultado = this.executarRepita(lines, i);
                         i = resultado.proximaLinha - 1;
+                    } else if (linha.includes('←') || linha.includes('<-')) {
+                        this.atribuir(linha);
                     }
                     
                     i++;
