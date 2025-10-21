@@ -201,7 +201,7 @@ dumiteqs/
 
 ### Via Interface Web
 
-1. Acesse o site (quando publicado em dumiteqs.manus.space)
+1. Acesse o site (quando publicado em peteqsint-plrqt65m.manus.space)
 2. Escreva seu código PETEQS no editor
 3. Clique em **"Executar"** para ver os resultados
 4. Use os exemplos fornecidos para aprender
